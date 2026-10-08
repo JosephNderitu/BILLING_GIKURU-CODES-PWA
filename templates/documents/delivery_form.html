@@ -41,10 +41,10 @@
     <p class="text-xs text-slate-500 mt-3">The last blank card adds an extra item. Changing the type does not rewrite an existing checklist, so edit the checklist text directly.</p>
   </div>
 
-  <div class="flex gap-3">
-    <button class="bg-brand-green hover:bg-green-800 text-white font-semibold px-6 py-2.5 rounded-lg">
-      <i class="fa-solid fa-floppy-disk mr-1"></i> Save</button>
-    <a href="{% url 'documents:detail' note.document.pk %}" class="px-6 py-2.5 rounded-lg border border-slate-300 font-semibold">Cancel</a>
-  </div>
+    <div class="sticky bottom-0 z-20 -mx-4 sm:mx-0 px-4 py-3 sm:p-0 flex gap-3 bg-white/95 backdrop-blur border-t border-slate-200 sm:border-0 sm:bg-transparent">
+      <button class="flex-1 sm:flex-none bg-brand-green hover:bg-green-800 text-white font-semibold px-6 py-2.5 rounded-lg">
+        <i class="fa-solid fa-floppy-disk mr-1"></i> Save</button>
+      <a href="{% url 'documents:detail' note.document.pk %}" class="flex-1 sm:flex-none text-center px-6 py-2.5 rounded-lg border border-slate-300 font-semibold">Cancel</a>
+    </div>
 </form>
 {% endblock %}

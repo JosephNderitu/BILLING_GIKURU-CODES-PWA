@@ -1,26 +1,30 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
   <h1 class="text-2xl font-bold">{{ meta.plural }}</h1>
   <a href="{% url 'documents:create' doc_type %}"
-     class="inline-flex items-center gap-2 bg-brand-green hover:bg-green-800 text-white text-sm font-semibold px-4 py-2 rounded-lg">
+     class="inline-flex items-center justify-center gap-2 bg-brand-green hover:bg-green-800 text-white text-sm font-semibold px-4 py-2.5 rounded-lg w-full sm:w-auto">
     <i class="fa-solid fa-plus"></i> New {{ meta.label }}</a>
 </div>
 
-<form method="get" class="flex flex-wrap items-end gap-3 mb-5 text-sm">
-  <div><label class="block text-xs font-semibold text-slate-600 mb-1">Search</label>
-    <input name="q" value="{{ f.q }}" placeholder="Number or client" class="rounded-lg border border-slate-300 px-3 py-2 w-56"></div>
-  <div><label class="block text-xs font-semibold text-slate-600 mb-1">Status</label>
-    <select name="status" class="rounded-lg border border-slate-300 px-3 py-2">
+<form method="get" class="grid grid-cols-2 md:flex md:flex-wrap md:items-end gap-3 mb-5 text-sm">
+  <div class="col-span-2 md:col-span-1">
+    <label class="block text-xs font-semibold text-slate-600 mb-1">Search</label>
+    <input name="q" value="{{ f.q }}" placeholder="Number or client" class="w-full md:w-56 rounded-lg border border-slate-300 px-3 py-2"></div>
+  <div class="col-span-2 sm:col-span-1">
+    <label class="block text-xs font-semibold text-slate-600 mb-1">Status</label>
+    <select name="status" class="w-full rounded-lg border border-slate-300 px-3 py-2">
       <option value="">All</option>
       {% for value, label in statuses %}<option value="{{ value }}" {% if f.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
     </select></div>
   <div><label class="block text-xs font-semibold text-slate-600 mb-1">From</label>
-    <input type="date" name="from" value="{{ f.from }}" class="rounded-lg border border-slate-300 px-3 py-2"></div>
+    <input type="date" name="from" value="{{ f.from }}" class="w-full rounded-lg border border-slate-300 px-3 py-2"></div>
   <div><label class="block text-xs font-semibold text-slate-600 mb-1">To</label>
-    <input type="date" name="to" value="{{ f.to }}" class="rounded-lg border border-slate-300 px-3 py-2"></div>
-  <button class="bg-brand-blue text-white font-semibold px-4 py-2 rounded-lg"><i class="fa-solid fa-filter mr-1"></i> Filter</button>
-  <a href="{% url 'documents:list' doc_type %}" class="px-4 py-2 rounded-lg border border-slate-300 font-semibold">Reset</a>
+    <input type="date" name="to" value="{{ f.to }}" class="w-full rounded-lg border border-slate-300 px-3 py-2"></div>
+  <div class="col-span-2 md:col-span-1 flex gap-2">
+    <button class="flex-1 md:flex-none bg-brand-blue text-white font-semibold px-4 py-2 rounded-lg"><i class="fa-solid fa-filter mr-1"></i> Filter</button>
+    <a href="{% url 'documents:list' doc_type %}" class="flex-1 md:flex-none text-center px-4 py-2 rounded-lg border border-slate-300 font-semibold">Reset</a>
+  </div>
 </form>
 
 {% include "documents/_table.html" %}

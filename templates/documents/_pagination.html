@@ -1,21 +1,26 @@
 {% if page_obj.paginator.num_pages > 1 %}
-<nav class="flex flex-wrap items-center justify-between gap-3 mt-4 text-sm">
+<nav class="mt-5 flex flex-col-reverse sm:flex-row items-center justify-between gap-3 text-sm">
   <p class="text-slate-500">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} &middot; {{ page_obj.paginator.count }} total</p>
-  <div class="flex items-center gap-1">
+  <div class="flex items-center justify-between sm:justify-start gap-1 w-full sm:w-auto">
     {% if page_obj.has_previous %}
     <a href="?{% if querystring %}{{ querystring }}&amp;{% endif %}page={{ page_obj.previous_page_number }}"
-       class="px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-50"><i class="fa-solid fa-chevron-left"></i></a>
-    {% endif %}
-    {% for n in page_range %}
-      {% if n == page_obj.paginator.ELLIPSIS %}<span class="px-2 text-slate-400">&hellip;</span>
-      {% elif n == page_obj.number %}<span class="px-3 py-1.5 rounded-lg bg-brand-green text-white font-semibold">{{ n }}</span>
-      {% else %}<a href="?{% if querystring %}{{ querystring }}&amp;{% endif %}page={{ n }}"
-           class="px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-50">{{ n }}</a>{% endif %}
-    {% endfor %}
+       class="px-3 py-2 rounded-lg border border-slate-300 hover:bg-slate-50"><i class="fa-solid fa-chevron-left"></i><span class="sm:hidden ml-2">Prev</span></a>
+    {% else %}<span class="px-3 py-2 opacity-0 sm:hidden"><i class="fa-solid fa-chevron-left"></i><span class="ml-2">Prev</span></span>{% endif %}
+
+    <div class="hidden sm:flex items-center gap-1">
+      {% for n in page_range %}
+        {% if n == page_obj.paginator.ELLIPSIS %}<span class="px-2 text-slate-400">&hellip;</span>
+        {% elif n == page_obj.number %}<span class="px-3 py-2 rounded-lg bg-brand-green text-white font-semibold">{{ n }}</span>
+        {% else %}<a href="?{% if querystring %}{{ querystring }}&amp;{% endif %}page={{ n }}"
+             class="px-3 py-2 rounded-lg border border-slate-300 hover:bg-slate-50">{{ n }}</a>{% endif %}
+      {% endfor %}
+    </div>
+    <span class="sm:hidden font-semibold text-slate-600">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+
     {% if page_obj.has_next %}
     <a href="?{% if querystring %}{{ querystring }}&amp;{% endif %}page={{ page_obj.next_page_number }}"
-       class="px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-50"><i class="fa-solid fa-chevron-right"></i></a>
-    {% endif %}
+       class="px-3 py-2 rounded-lg border border-slate-300 hover:bg-slate-50"><span class="sm:hidden mr-2">Next</span><i class="fa-solid fa-chevron-right"></i></a>
+    {% else %}<span class="px-3 py-2 opacity-0 sm:hidden"><span class="mr-2">Next</span><i class="fa-solid fa-chevron-right"></i></span>{% endif %}
   </div>
 </nav>
 {% endif %}

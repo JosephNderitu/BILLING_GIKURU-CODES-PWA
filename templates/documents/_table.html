@@ -1,4 +1,4 @@
-<div class="rounded-xl border border-slate-200 overflow-x-auto">
+<div class="hidden md:block rounded-xl border border-slate-200 overflow-x-auto">
   <table class="w-full text-sm">
     <thead class="bg-slate-50 text-left text-slate-500">
       <tr><th class="p-3">Number</th><th class="p-3">Client</th><th class="p-3">Date</th>
@@ -22,4 +22,24 @@
       {% endfor %}
     </tbody>
   </table>
+</div>
+
+<div class="md:hidden space-y-3">
+  {% for d in docs %}
+  <a href="{% url 'documents:detail' d.pk %}" class="block rounded-xl border border-slate-200 p-4 active:bg-slate-50">
+    <div class="flex items-start justify-between gap-3">
+      <div class="min-w-0">
+        <p class="font-semibold text-brand-blue">{{ d.number }}</p>
+        <p class="text-sm text-slate-600 truncate">{{ d.display_client }}</p>
+      </div>
+      <span class="shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold {{ d.status_style }}">{{ d.status_label }}</span>
+    </div>
+    <div class="mt-3 flex items-end justify-between">
+      <span class="text-xs text-slate-500">{{ d.issue_date|date:"d M Y" }}</span>
+      <span class="font-bold">KSh {{ d.total|floatformat:"2g" }}</span>
+    </div>
+  </a>
+  {% empty %}
+  <p class="text-center text-slate-400 py-8">Nothing matches.</p>
+  {% endfor %}
 </div>

@@ -1,32 +1,31 @@
 {% extends "base.html" %}
 {% block content %}
-<h1 class="text-2xl font-bold mb-6">Dashboard</h1>
-<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-  <div class="rounded-xl border border-slate-200 p-5">
+<h1 class="text-2xl font-bold mb-5">Dashboard</h1>
+
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
+  <div class="rounded-xl border border-slate-200 p-4 sm:p-5">
     <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Outstanding invoices</p>
-    <p class="mt-2 text-2xl font-bold text-brand-blue">KSh {{ outstanding|floatformat:"2g" }}</p>
+    <p class="mt-2 text-xl sm:text-2xl font-bold text-brand-blue">KSh {{ outstanding|floatformat:"2g" }}</p>
   </div>
-  <div class="rounded-xl border border-slate-200 p-5">
+  <div class="rounded-xl border border-slate-200 p-4 sm:p-5">
     <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Overdue</p>
-    <p class="mt-2 text-2xl font-bold {% if overdue_count %}text-red-600{% else %}text-brand-green{% endif %}">{{ overdue_count }}</p>
+    <p class="mt-2 text-xl sm:text-2xl font-bold {% if overdue_count %}text-red-600{% else %}text-brand-green{% endif %}">{{ overdue_count }}</p>
   </div>
-  <div class="rounded-xl border border-slate-200 p-5">
+  <div class="rounded-xl border border-slate-200 p-4 sm:p-5">
     <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Collected this month</p>
-    <p class="mt-2 text-2xl font-bold text-brand-green">KSh {{ collected|floatformat:"2g" }}</p>
+    <p class="mt-2 text-xl sm:text-2xl font-bold text-brand-green">KSh {{ collected|floatformat:"2g" }}</p>
   </div>
 </div>
-<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-8">
   {% for key, m in types.items %}
-  <a href="{% url 'documents:create' key %}"
-     class="group rounded-xl border border-slate-200 p-5 hover:shadow-md transition">
-    <div class="flex items-center justify-between">
-      <span class="h-10 w-10 grid place-items-center rounded-lg text-white bg-{{ m.tw }}"><i class="fa-solid {{ m.icon }}"></i></span>
-      <i class="fa-solid fa-plus text-slate-300 group-hover:text-slate-500"></i>
+  <a href="{% url 'documents:create' key %}" class="group flex sm:block items-center gap-4 rounded-xl border border-slate-200 p-4 sm:p-5 hover:shadow-md transition">
+    <span class="h-10 w-10 shrink-0 grid place-items-center rounded-lg text-white bg-{{ m.tw }}"><i class="fa-solid {{ m.icon }}"></i></span>
+    <div class="flex-1 sm:mt-4">
+      <p class="font-semibold">New {{ m.label }}</p>
+      <p class="text-xs text-slate-500">{% for k, c in counts.items %}{% if k == key %}{{ c }} created{% endif %}{% endfor %}</p>
     </div>
-    <p class="mt-4 font-semibold">New {{ m.label }}</p>
-    <p class="text-xs text-slate-500">
-      {% for k, c in counts.items %}{% if k == key %}{{ c }} created{% endif %}{% endfor %}
-    </p>
+    <i class="fa-solid fa-plus text-slate-300 group-hover:text-slate-500 sm:hidden"></i>
   </a>
   {% endfor %}
 </div>
