@@ -21,6 +21,12 @@ from django.views.decorators.http import require_POST
 from .forms import DocumentForm, ItemFormSet, STATUS_CHOICES
 from .models import BusinessProfile, Document, DocumentItem
 
+from django.http import FileResponse
+from .forms import DeliveryForm, DeliveryItemFormSet, SignedCopyForm
+from .meta import CHECKLISTS, guess_category
+from .models import DeliveryItem, DeliveryNote
+from .pdf import build_delivery_context, build_delivery_pdf
+
 
 def _check(doc_type):
     if doc_type not in TYPE_META:
@@ -100,7 +106,9 @@ def document_detail(request, pk):
     return render(request, "documents/document_detail.html", {
         "doc": doc, "meta": TYPE_META[doc.doc_type],
         "status_choices": STATUS_CHOICES[doc.doc_type],
-        "converted": list(doc.converted.all())})
+        "converted": list(doc.converted.all()),
+        "delivery": doc.deliveries.first()
+        })
 
 
 @login_required
@@ -221,3 +229,109 @@ def document_pdf(request, pk):
     resp = HttpResponse(build_pdf(doc, request), content_type="application/pdf")
     resp["Content-Disposition"] = f'inline; filename="{doc.number}.pdf"'
     return resp
+
+@login_required
+@require_POST
+def delivery_create(request, doc_pk):
+    doc = get_object_or_404(Document, pk=doc_pk)
+    if doc.doc_type == Document.QUOTATION or doc.status == "void":
+        raise Http404
+    existing = doc.deliveries.first()
+    if existing:
+        messages.info(request, f"{existing.number} already exists for this document.")
+        return redirect("documents:delivery_detail", pk=existing.pk)
+
+    note = DeliveryNote.objects.create(
+        document=doc,
+        delivered_by=request.user.get_full_name() or request.user.username,
+        delivery_location=(doc.client.address.replace("\n", ", ") if doc.client else ""))
+    items = []
+    for i in doc.items.all():
+        cat = guess_category(i.description)
+        items.append(DeliveryItem(note=note, description=i.description, category=cat,
+                                  quantity=i.quantity, serial_numbers=i.serial_numbers,
+                                  checks=CHECKLISTS[cat]))
+    DeliveryItem.objects.bulk_create(items)
+    messages.success(request, f"{note.number} created. Review the checklists, then print the form.")
+    return redirect("documents:delivery_edit", pk=note.pk)
+
+
+@login_required
+def delivery_edit(request, pk):
+    note = get_object_or_404(DeliveryNote, pk=pk)
+    if request.method == "POST":
+        form = DeliveryForm(request.POST, instance=note)
+        formset = DeliveryItemFormSet(request.POST, instance=note)
+        if form.is_valid() and formset.is_valid():
+            form.save()
+            formset.save()
+            messages.success(request, f"{note.number} saved.")
+            return redirect("documents:delivery_detail", pk=note.pk)
+    else:
+        form = DeliveryForm(instance=note)
+        formset = DeliveryItemFormSet(instance=note)
+    return render(request, "documents/delivery_form.html", {"note": note, "form": form, "formset": formset})
+
+
+@login_required
+def delivery_detail(request, pk):
+    note = get_object_or_404(DeliveryNote.objects.select_related("document"), pk=pk)
+    return render(request, "documents/delivery_detail.html", {
+        "note": note, "upload_form": SignedCopyForm(initial={"received_by": note.received_by})})
+
+
+@login_required
+def delivery_preview(request, pk):
+    note = get_object_or_404(DeliveryNote, pk=pk)
+    return render(request, "documents/print/delivery.html", build_delivery_context(note, False))
+
+
+@login_required
+def delivery_pdf(request, pk):
+    note = get_object_or_404(DeliveryNote, pk=pk)
+    resp = HttpResponse(build_delivery_pdf(note, request), content_type="application/pdf")
+    resp["Content-Disposition"] = f'inline; filename="{note.number}.pdf"'
+    return resp
+
+
+@login_required
+@require_POST
+def delivery_upload(request, pk):
+    note = get_object_or_404(DeliveryNote, pk=pk)
+    form = SignedCopyForm(request.POST, request.FILES)
+    if form.is_valid():
+        note.signed_copy = form.cleaned_data["signed_copy"]
+        note.received_by = form.cleaned_data["received_by"]
+        note.signed_at = timezone.now()
+        note.save()
+        messages.success(request, f"Signed copy saved for {note.number}.")
+    else:
+        for errs in form.errors.values():
+            messages.error(request, " ".join(errs))
+    return redirect("documents:delivery_detail", pk=note.pk)
+
+
+@login_required
+def delivery_signed_file(request, pk):
+    note = get_object_or_404(DeliveryNote, pk=pk)
+    if not note.signed_copy:
+        raise Http404
+    return FileResponse(note.signed_copy.open("rb"))
+
+
+@login_required
+def delivery_list(request):
+    qs = DeliveryNote.objects.select_related("document", "document__client")
+    q = request.GET.get("q", "").strip()
+    status = request.GET.get("status", "")
+    if q:
+        qs = qs.filter(Q(number__icontains=q) | Q(document__number__icontains=q)
+                       | Q(document__client__name__icontains=q) | Q(document__client_name__icontains=q))
+    if status == "pending":
+        qs = qs.filter(signed_copy="")
+    elif status == "signed":
+        qs = qs.exclude(signed_copy="")
+    page_obj, page_range, querystring = paginate(request, qs)
+    return render(request, "documents/delivery_list.html", {
+        "notes": page_obj, "page_obj": page_obj, "page_range": page_range,
+        "querystring": querystring, "f": {"q": q, "status": status}})

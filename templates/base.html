@@ -43,13 +43,15 @@
                 <i class="fa-solid fa-file-invoice-dollar w-4 text-brand-green"></i> Invoices</a>
             <a href="{% url 'documents:list' 'receipt' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-100">
                 <i class="fa-solid fa-receipt w-4 text-brand-gold"></i> Receipts</a>
+            <a href="{% url 'documents:delivery_list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-100">
+                <i class="fa-solid fa-truck w-4 text-brand-blue"></i> Deliveries</a>
         </nav>
     </aside>
     <main class="flex-1 p-6 md:p-10">
-        {% for m in messages %}
-        <div class="mb-6 rounded-lg border border-brand-green/30 bg-brand-green/10 text-brand-green px-4 py-3 text-sm">
-            <i class="fa-solid fa-circle-check mr-2"></i>{{ m }}</div>
-        {% endfor %}
+          {% for m in messages %}
+          <div class="mb-6 rounded-lg border px-4 py-3 text-sm {% if m.tags == 'error' %}border-red-300 bg-red-50 text-red-700{% else %}border-brand-green/30 bg-brand-green/10 text-brand-green{% endif %}">
+            {{ m }}</div>
+          {% endfor %}
         {% block content %}{% endblock %}
     </main>
   </div>

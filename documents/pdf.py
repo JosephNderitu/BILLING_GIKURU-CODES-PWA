@@ -14,6 +14,7 @@ from playwright.sync_api import sync_playwright
 
 from .meta import TYPE_META
 from .models import Document
+from .meta import DEFAULT_DELIVERY_TERMS, TYPE_META
 
 MM = 96 / 25.4  # CSS pixels per mm
 
@@ -139,6 +140,44 @@ def build_pdf(doc, request):
                 f'{html_lib.escape(biz.name)} | {html_lib.escape(biz.tagline)} | '
                 'Page <span class="pageNumber"></span> of <span class="totalPages"></span></div>'
             )
+            page = browser.new_page()
+            page.set_content(html, wait_until="load")
+            return page.pdf(
+                format="A4", print_background=True, display_header_footer=True,
+                header_template="<span></span>", footer_template=footer,
+                margin={"top": "0", "right": "0", "bottom": "16mm", "left": "0"})
+        finally:
+            browser.close()
+            
+
+def build_delivery_context(note, for_pdf=False, **extra):
+    biz = note.biz
+    doc = note.document
+    ctx = {
+        "note": note, "doc": doc, "client": doc.client, "p": biz,
+        "items": note.items.all(), "for_pdf": for_pdf, "accent": "#16A34A",
+        "logo": _media(biz.logo, for_pdf), "signature": _media(biz.signature, for_pdf),
+        "stamp": _media(biz.stamp, for_pdf),
+        "delivery_terms": biz.delivery_terms or DEFAULT_DELIVERY_TERMS,
+        "copies": ["PREVIEW"],
+    }
+    ctx.update(extra)
+    return ctx
+
+
+def build_delivery_pdf(note, request):
+    ctx = build_delivery_context(note, True, copies=["SELLER COPY", "CUSTOMER COPY"])
+    html = render_to_string("documents/print/delivery.html", ctx, request)
+    biz = note.biz
+    footer = (
+        '<div style="width:100%;font-size:8px;color:#64748B;text-align:center;'
+        'font-family:Helvetica,Arial,sans-serif;">'
+        f'{html_lib.escape(biz.name)} | {html_lib.escape(note.number)} | '
+        'Page <span class="pageNumber"></span> of <span class="totalPages"></span></div>'
+    )
+    with sync_playwright() as pw:
+        browser = pw.chromium.launch()
+        try:
             page = browser.new_page()
             page.set_content(html, wait_until="load")
             return page.pdf(

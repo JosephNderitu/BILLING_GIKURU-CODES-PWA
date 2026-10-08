@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>{{ note.number }}</title>
+<style>
+@page { size: A4; margin: 0; }
+* { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+html, body { margin: 0; }
+body { font-family: Helvetica, Arial, sans-serif; font-size: 9.5pt; color: #0F172A; background: #fff; }
+.copy { width: 210mm; margin: 0 auto; position: relative; }
+.copy + .copy { break-before: page; }
+.band { position: absolute; top: 0; left: 0; right: 0; height: 6mm;
+  background: linear-gradient(90deg, #16A34A 0%, #16A34A 55%, #F5B301 55%, #F5B301 80%, #1B2FA8 80%, #1B2FA8 100%); }
+table { border-collapse: collapse; width: 100%; }
+td, th { vertical-align: top; }
+.spacer td { height: 12mm; padding: 0; }
+.pad { padding: 0 14mm 6mm; }
+.logo { height: 22mm; }
+.biz { font-size: 8.5pt; color: #475569; line-height: 1.5; }
+.title { font-size: 21pt; font-weight: 700; color: {{ accent }}; text-align: right; margin: 0; line-height: 1.1; }
+.sub { text-align: right; font-size: 9pt; color: #475569; margin-top: 1mm; }
+.copytag { display: inline-block; margin-top: 2mm; padding: 0.8mm 3mm; border: 0.4mm solid #1B2FA8; color: #1B2FA8; font-weight: 700; font-size: 8pt; border-radius: 6mm; }
+.rule { height: 1mm; background: #F5B301; margin: 5mm 0 0; }
+.label { font-size: 8pt; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: {{ accent }}; margin-bottom: 1.2mm; }
+.parties { margin-top: 5mm; }
+.parties td { width: 50%; padding-right: 6mm; font-size: 9pt; line-height: 1.55; }
+.hint { margin: 4mm 0 3mm; padding: 2.2mm 3mm; background: #F8FAFC; border-left: 1mm solid #F5B301; font-size: 8.5pt; color: #475569; }
+.item { break-inside: avoid; margin-top: 3.5mm; }
+.chk td { padding: 1.5mm 2.5mm; border: 1px solid #CBD5E1; font-size: 9pt; }
+.chk .ihead td { background: {{ accent }}; color: #fff; border-color: {{ accent }}; font-size: 9.5pt; }
+.chk .ihead .qty { float: right; font-size: 8.5pt; }
+.chk .ihead .fill { border-bottom-color: #fff; }
+.sn { font-size: 7.5pt; margin-top: 0.8mm; opacity: .95; }
+.chk .units td { background: #F1F5F9; font-size: 6.8pt; text-align: center; word-break: break-all; font-weight: 700; color: #334155; }
+.chk td.tick { width: 16mm; text-align: center; }
+.box { display: inline-block; width: 4.4mm; height: 4.4mm; border: 0.35mm solid #0F172A; border-radius: 0.7mm; background: #fff; vertical-align: middle; }
+.fill { display: inline-block; min-width: 55mm; height: 4.5mm; border-bottom: 0.3mm solid #64748B; vertical-align: bottom; }
+.fill.s { min-width: 14mm; }
+.fill.w { min-width: 125mm; }
+.ack { margin-top: 6mm; break-inside: avoid; }
+.ack p { font-size: 8.5pt; color: #334155; line-height: 1.5; margin: 0 0 3mm; }
+.sig td { width: 50%; padding-right: 6mm; font-size: 8.5pt; }
+.sig .line { border-bottom: 0.3mm solid #64748B; height: 8mm; margin-bottom: 0.5mm; }
+.sig .line.tall { height: 14mm; }
+.sig .cap { color: #64748B; font-size: 7.5pt; margin-bottom: 1.5mm; }
+.stampbox { border: 0.3mm dashed #94A3B8; height: 24mm; margin-top: 1mm; text-align: center; color: #94A3B8; font-size: 7.5pt; padding-top: 9mm; }
+.sig img.sg { height: 16mm; }
+.sig img.st { height: 28mm; }
+.foot { margin-top: 4mm; font-size: 7.5pt; color: #64748B; }
+</style>
+</head>
+<body>
+{% for copy in copies %}
+<div class="copy">
+  <div class="band"></div>
+  <table>
+    <thead class="spacer"><tr><td></td></tr></thead>
+    <tbody><tr><td class="pad">
+
+      <table style="margin-top:2mm">
+        <tr>
+          <td style="width:55%">
+            {% if logo %}<img class="logo" src="{{ logo }}" alt="">{% endif %}
+            <div class="biz" style="margin-top:1.5mm">
+              {{ p.address|linebreaksbr }}<br>{{ p.phone }}{% if p.email %} &middot; {{ p.email }}{% endif %}
+              {% if p.kra_pin %}<br>KRA PIN: {{ p.kra_pin }}{% endif %}
+            </div>
+          </td>
+          <td>
+            <p class="title">DELIVERY NOTE</p>
+            <div class="sub">Handover and Acceptance Form</div>
+            <div style="text-align:right">{% if copy != "PREVIEW" %}<span class="copytag">{{ copy }}</span>{% endif %}</div>
+          </td>
+        </tr>
+      </table>
+      <div class="rule"></div>
+
+      <table class="parties"><tr>
+        <td>
+          <div class="label">Delivered to</div>
+          <b style="font-size:10.5pt">{{ doc.display_client }}</b><br>
+          {% if client %}{% if client.phone %}{{ client.phone }}<br>{% endif %}{% endif %}
+          {% if note.delivery_location %}Location: {{ note.delivery_location }}{% elif client %}{{ client.address|linebreaksbr }}{% endif %}
+        </td>
+        <td>
+          <div class="label">Reference</div>
+          Delivery note: <b>{{ note.number }}</b><br>
+          {{ doc.get_doc_type_display }}: <b>{{ doc.number }}</b><br>
+          Delivery date: {{ note.delivery_date|date:"d M Y" }}<br>
+          Delivered by: {{ note.delivered_by }}
+        </td>
+      </tr></table>
+
+      <div class="hint">Please test each item in the presence of our delivery agent and tick every box that applies.
+        Write any problem under Remarks before signing.</div>
+
+      {% for item in items %}
+      <div class="item">
+        <table class="chk">
+          <tr class="ihead"><td colspan="{{ item.colspan }}">
+            <b>{{ forloop.counter }}. {{ item.description }}</b>
+            <span class="qty">Delivered: <b>{{ item.quantity|floatformat:"-2" }}</b> &nbsp; Received: <span class="fill s"></span></span>
+            {% if item.serials and item.boxes|length == 1 %}<div class="sn">S/N: {{ item.serials|join:", " }}</div>{% endif %}
+          </td></tr>
+          {% if item.boxes|length > 1 %}
+          <tr class="units"><td></td>{% for b in item.boxes %}<td>{{ b }}</td>{% endfor %}</tr>
+          {% endif %}
+          {% for c in item.check_list %}
+            {% if c|last == ":" %}
+            <tr><td colspan="{{ item.colspan }}">{{ c }} <span class="fill"></span></td></tr>
+            {% else %}
+            <tr><td>{{ c }}</td>{% for b in item.boxes %}<td class="tick"><span class="box"></span></td>{% endfor %}</tr>
+            {% endif %}
+          {% endfor %}
+          <tr><td colspan="{{ item.colspan }}">Remarks: <span class="fill w"></span></td></tr>
+        </table>
+      </div>
+      {% endfor %}
+
+      {% if note.notes %}<div class="hint" style="margin-top:4mm"><b>Notes:</b> {{ note.notes|linebreaksbr }}</div>{% endif %}
+
+      <div class="ack">
+        <div class="label">Customer acceptance</div>
+        <p>{{ delivery_terms|linebreaksbr }}</p>
+        <table class="sig"><tr>
+          <td>
+            <div class="line"></div><div class="cap">Received by (full name)</div>
+            <div class="line"></div><div class="cap">ID / Passport number and phone</div>
+            <div class="line tall"></div><div class="cap">Customer signature</div>
+            <div class="line"></div><div class="cap">Date and time</div>
+            <div class="stampbox">Customer stamp (if any)</div>
+          </td>
+          <td>
+            <div class="label" style="margin-top:0">Delivered by</div>
+            <b>{{ note.delivered_by }}</b>, {{ p.name }}
+            <div style="margin-top:3mm">{% if signature %}<img class="sg" src="{{ signature }}" alt="">{% endif %}</div>
+            <div class="line" style="height:1mm"></div><div class="cap">Authorised signature</div>
+            <div class="cap">Date: {{ note.delivery_date|date:"d M Y" }}</div>
+            <div style="margin-top:3mm">{% if stamp %}<img class="st" src="{{ stamp }}" alt="">{% endif %}</div>
+          </td>
+        </tr></table>
+        <div class="foot">The seller keeps one signed copy and uploads it to the system. The customer keeps one signed copy.</div>
+      </div>
+
+    </td></tr></tbody>
+  </table>
+</div>
+{% endfor %}
+</body>
+</html>

@@ -16,6 +16,15 @@
   <div class="flex flex-wrap items-center gap-2 text-sm font-semibold">
     <a href="{% url 'documents:edit' doc.pk %}" class="px-4 py-2 rounded-lg border border-slate-300 hover:bg-slate-50"><i class="fa-solid fa-pen mr-1"></i> Edit</a>
     <a href="{% url 'documents:pdf' doc.pk %}" target="_blank" class="px-4 py-2 rounded-lg bg-brand-blue text-white"><i class="fa-solid fa-file-pdf mr-1"></i> PDF</a>
+    {% if doc.doc_type != 'quotation' and doc.status != 'void' %}
+      {% if delivery %}
+      <a href="{% url 'documents:delivery_detail' delivery.pk %}" class="px-4 py-2 rounded-lg border border-slate-300 hover:bg-slate-50">
+        <i class="fa-solid fa-truck mr-1"></i> {{ delivery.number }}</a>
+      {% else %}
+      <form method="post" action="{% url 'documents:delivery_create' doc.pk %}">{% csrf_token %}
+        <button class="px-4 py-2 rounded-lg border border-slate-300 hover:bg-slate-50"><i class="fa-solid fa-truck mr-1"></i> Create Delivery Note</button></form>
+      {% endif %}
+    {% endif %}
     {% if doc.doc_type == 'receipt' %}
     <a href="{% url 'documents:print' doc.pk %}?auto=1" target="_blank" class="px-4 py-2 rounded-lg bg-brand-green text-white"><i class="fa-solid fa-print mr-1"></i> Print 80mm</a>
     {% endif %}

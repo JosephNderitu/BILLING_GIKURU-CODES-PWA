@@ -18,3 +18,16 @@ class DocumentAdmin(admin.ModelAdmin):
 
 admin.site.register(BusinessProfile)
 admin.site.register(Client)
+
+from .models import DeliveryItem, DeliveryNote
+
+
+class DeliveryItemInline(admin.TabularInline):
+    model = DeliveryItem
+    extra = 0
+
+
+@admin.register(DeliveryNote)
+class DeliveryNoteAdmin(admin.ModelAdmin):
+    list_display = ("number", "document", "delivery_date", "signed_at")
+    inlines = [DeliveryItemInline]

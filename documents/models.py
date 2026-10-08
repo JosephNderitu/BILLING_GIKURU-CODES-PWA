@@ -7,6 +7,8 @@ from functools import cached_property
 from django.conf import settings
 from .meta import STATUS_STYLES
 from types import SimpleNamespace
+import uuid
+from pathlib import Path
 
 
 class BusinessProfile(models.Model):
@@ -23,6 +25,7 @@ class BusinessProfile(models.Model):
     vat_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal("16.00"))
     default_terms = models.TextField(blank=True)
     receipt_footer = models.TextField(blank=True)
+    delivery_terms = models.TextField(blank=True, help_text="Acceptance wording on delivery notes")
 
     def __str__(self):
         return self.name
@@ -43,6 +46,7 @@ class BusinessProfile(models.Model):
             "vat_rate": str(self.vat_rate),
             "logo": self.logo.name or "", "signature": self.signature.name or "",
             "stamp": self.stamp.name or "",
+            "delivery_terms": self.delivery_terms,
         }
 
 
@@ -207,3 +211,106 @@ class DocumentItem(models.Model):
 
     def __str__(self):
         return self.description
+    
+BIZ_KEYS = ("name", "tagline", "address", "phone", "email", "kra_pin", "payment_details",
+            "receipt_footer", "delivery_terms", "logo", "signature", "stamp")
+
+
+def make_biz(data):
+    data = dict(data or {})
+    if not data:
+        p = BusinessProfile.get()
+        data = p.snapshot() if p else {}
+    for key in BIZ_KEYS:
+        data.setdefault(key, "")
+    data.setdefault("vat_rate", "16.00")
+    return SimpleNamespace(**data)
+
+
+def signed_path(instance, filename):
+    ext = Path(filename).suffix.lower()
+    return f"signed/{timezone.localdate():%Y/%m}/{uuid.uuid4().hex}{ext}"
+
+
+class DeliveryNote(models.Model):
+    document = models.ForeignKey(Document, related_name="deliveries", on_delete=models.CASCADE)
+    number = models.CharField(max_length=30, unique=True, editable=False)
+    delivery_date = models.DateField(default=timezone.localdate)
+    delivery_location = models.CharField(max_length=200, blank=True)
+    delivered_by = models.CharField(max_length=80, blank=True)
+    notes = models.TextField(blank=True)
+    received_by = models.CharField(max_length=120, blank=True)
+    signed_copy = models.FileField(upload_to=signed_path, blank=True)
+    signed_at = models.DateTimeField(null=True, blank=True)
+    business = models.JSONField(default=dict, blank=True, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return self.number
+
+    def save(self, *args, **kwargs):
+        if not self.number:
+            prefix = f"DN-{timezone.localdate().year}-"
+            last = DeliveryNote.objects.filter(number__startswith=prefix).order_by("-number").first()
+            seq = int(last.number.split("-")[-1]) + 1 if last else 1
+            self.number = f"{prefix}{seq:04d}"
+        if not self.business:
+            p = BusinessProfile.get()
+            if p:
+                self.business = p.snapshot()
+                self.__dict__.pop("biz", None)
+        super().save(*args, **kwargs)
+
+    @cached_property
+    def biz(self):
+        return make_biz(self.business)
+
+    @property
+    def is_signed(self):
+        return bool(self.signed_copy)
+
+    @property
+    def signed_is_image(self):
+        return self.signed_copy.name.lower().endswith((".png", ".jpg", ".jpeg", ".webp"))
+
+
+class DeliveryItem(models.Model):
+    CATEGORIES = [("computer", "Computer"), ("monitor", "Monitor"), ("keyboard", "Keyboard"),
+                  ("mouse", "Mouse"), ("cable", "Cable / adapter"), ("other", "Other")]
+
+    note = models.ForeignKey(DeliveryNote, related_name="items", on_delete=models.CASCADE)
+    description = models.CharField(max_length=255)
+    category = models.CharField(max_length=10, choices=CATEGORIES, default="other")
+    quantity = models.DecimalField(max_digits=10, decimal_places=2, default=1)
+    serial_numbers = models.TextField(blank=True)
+    checks = models.JSONField(default=list, blank=True)
+
+    class Meta:
+        ordering = ["id"]
+
+    def __str__(self):
+        return self.description
+
+    @property
+    def serials(self):
+        return [s.strip() for s in self.serial_numbers.splitlines() if s.strip()]
+
+    @property
+    def check_list(self):
+        return list(self.checks or [])
+
+    @property
+    def boxes(self):
+        """One tick column per unit for computers and monitors (2 to 8 units), else a single column."""
+        qty = int(self.quantity)
+        if self.category in ("computer", "monitor") and 1 < qty <= 8:
+            s = self.serials
+            return [s[i] if i < len(s) else f"Unit {i + 1}" for i in range(qty)]
+        return [""]
+
+    @property
+    def colspan(self):
+        return len(self.boxes) + 1
