@@ -1,0 +1,21 @@
+{% if page_obj.paginator.num_pages > 1 %}
+<nav class="flex flex-wrap items-center justify-between gap-3 mt-4 text-sm">
+  <p class="text-slate-500">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} &middot; {{ page_obj.paginator.count }} total</p>
+  <div class="flex items-center gap-1">
+    {% if page_obj.has_previous %}
+    <a href="?{% if querystring %}{{ querystring }}&amp;{% endif %}page={{ page_obj.previous_page_number }}"
+       class="px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-50"><i class="fa-solid fa-chevron-left"></i></a>
+    {% endif %}
+    {% for n in page_range %}
+      {% if n == page_obj.paginator.ELLIPSIS %}<span class="px-2 text-slate-400">&hellip;</span>
+      {% elif n == page_obj.number %}<span class="px-3 py-1.5 rounded-lg bg-brand-green text-white font-semibold">{{ n }}</span>
+      {% else %}<a href="?{% if querystring %}{{ querystring }}&amp;{% endif %}page={{ n }}"
+           class="px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-50">{{ n }}</a>{% endif %}
+    {% endfor %}
+    {% if page_obj.has_next %}
+    <a href="?{% if querystring %}{{ querystring }}&amp;{% endif %}page={{ page_obj.next_page_number }}"
+       class="px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-50"><i class="fa-solid fa-chevron-right"></i></a>
+    {% endif %}
+  </div>
+</nav>
+{% endif %}

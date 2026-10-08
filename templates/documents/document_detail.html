@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="flex flex-wrap items-start justify-between gap-4 mb-5">
+  <div>
+    <div class="flex items-center gap-3">
+      <h1 class="text-2xl font-bold">{{ doc.number }}</h1>
+      <span class="px-2.5 py-1 rounded-full text-xs font-semibold {{ doc.status_style }}">{{ doc.status_label }}</span>
+    </div>
+    <p class="text-sm text-slate-500 mt-1">{{ doc.display_client }} &middot; KSh {{ doc.total|floatformat:"2g" }}</p>
+    {% if doc.source %}<p class="text-xs text-slate-500 mt-1">Created from
+      <a class="text-brand-blue font-semibold" href="{% url 'documents:detail' doc.source.pk %}">{{ doc.source.number }}</a></p>{% endif %}
+    {% for c in converted %}<p class="text-xs text-slate-500 mt-1">Converted to
+      <a class="text-brand-blue font-semibold" href="{% url 'documents:detail' c.pk %}">{{ c.number }}</a></p>{% endfor %}
+  </div>
+
+  <div class="flex flex-wrap items-center gap-2 text-sm font-semibold">
+    <a href="{% url 'documents:edit' doc.pk %}" class="px-4 py-2 rounded-lg border border-slate-300 hover:bg-slate-50"><i class="fa-solid fa-pen mr-1"></i> Edit</a>
+    <a href="{% url 'documents:pdf' doc.pk %}" target="_blank" class="px-4 py-2 rounded-lg bg-brand-blue text-white"><i class="fa-solid fa-file-pdf mr-1"></i> PDF</a>
+    {% if doc.doc_type == 'receipt' %}
+    <a href="{% url 'documents:print' doc.pk %}?auto=1" target="_blank" class="px-4 py-2 rounded-lg bg-brand-green text-white"><i class="fa-solid fa-print mr-1"></i> Print 80mm</a>
+    {% endif %}
+    {% if not converted and doc.status != 'void' %}
+      {% if doc.doc_type == 'quotation' %}
+      <form method="post" action="{% url 'documents:convert' doc.pk 'invoice' %}">{% csrf_token %}
+        <button class="px-4 py-2 rounded-lg bg-brand-gold text-brand-ink"><i class="fa-solid fa-right-left mr-1"></i> Convert to Invoice</button></form>
+      {% elif doc.doc_type == 'invoice' %}
+      <form method="post" action="{% url 'documents:convert' doc.pk 'receipt' %}">{% csrf_token %}
+        <button class="px-4 py-2 rounded-lg bg-brand-gold text-brand-ink"><i class="fa-solid fa-receipt mr-1"></i> Issue Receipt</button></form>
+      {% endif %}
+    {% endif %}
+  </div>
+</div>
+
+<form method="post" action="{% url 'documents:status' doc.pk %}" class="flex items-center gap-2 text-sm mb-6">
+  {% csrf_token %}
+  <label class="text-slate-500">Status</label>
+  <select name="status" class="rounded-lg border border-slate-300 px-3 py-2">
+    {% for value, label in status_choices %}<option value="{{ value }}" {% if doc.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select>
+  <button class="px-4 py-2 rounded-lg border border-slate-300 font-semibold hover:bg-slate-50">Update</button>
+</form>
+
+<iframe src="{% url 'documents:preview' doc.pk %}"
+  class="rounded-xl border border-slate-200 bg-white {% if doc.doc_type == 'receipt' %}w-[340px] h-[1100px]{% else %}w-full max-w-[210mm] h-[297mm]{% endif %}"></iframe>
+{% endblock %}

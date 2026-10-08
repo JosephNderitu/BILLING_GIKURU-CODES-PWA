@@ -1,0 +1,25 @@
+<div class="rounded-xl border border-slate-200 overflow-x-auto">
+  <table class="w-full text-sm">
+    <thead class="bg-slate-50 text-left text-slate-500">
+      <tr><th class="p-3">Number</th><th class="p-3">Client</th><th class="p-3">Date</th>
+          <th class="p-3 text-right">Total</th><th class="p-3">Status</th><th class="p-3 w-24"></th></tr>
+    </thead>
+    <tbody>
+      {% for d in docs %}
+      <tr class="border-t border-slate-100 hover:bg-slate-50">
+        <td class="p-3 font-semibold"><a class="text-brand-blue" href="{% url 'documents:detail' d.pk %}">{{ d.number }}</a></td>
+        <td class="p-3">{{ d.display_client }}</td>
+        <td class="p-3 whitespace-nowrap">{{ d.issue_date|date:"d M Y" }}</td>
+        <td class="p-3 text-right whitespace-nowrap">KSh {{ d.total|floatformat:"2g" }}</td>
+        <td class="p-3"><span class="px-2.5 py-1 rounded-full text-xs font-semibold {{ d.status_style }}">{{ d.status_label }}</span></td>
+        <td class="p-3 text-right whitespace-nowrap text-slate-400">
+          <a href="{% url 'documents:edit' d.pk %}" class="hover:text-brand-green mr-3" title="Edit"><i class="fa-solid fa-pen"></i></a>
+          <a href="{% url 'documents:pdf' d.pk %}" target="_blank" class="hover:text-brand-blue" title="PDF"><i class="fa-solid fa-file-pdf"></i></a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="p-8 text-center text-slate-400">Nothing matches.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

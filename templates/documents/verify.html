@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Verify receipt</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+<body class="bg-white min-h-screen grid place-items-center p-6 font-sans">
+  <div class="w-full max-w-sm rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+    <div class="h-2" style="background:linear-gradient(90deg,#16A34A 55%,#F5B301 55% 80%,#1B2FA8 80%)"></div>
+    <div class="p-6 text-center">
+      {% if doc %}
+        <i class="fa-solid fa-circle-check text-5xl" style="color:#16A34A"></i>
+        <h1 class="mt-3 text-xl font-bold">Genuine {{ doc.get_doc_type_display }}</h1>
+        <p class="text-sm text-slate-500">Issued by {{ p.name }}</p>
+        <dl class="mt-5 text-sm text-left space-y-2">
+          <div class="flex justify-between"><dt class="text-slate-500">Number</dt><dd class="font-semibold">{{ doc.number }}</dd></div>
+          <div class="flex justify-between"><dt class="text-slate-500">Date</dt><dd class="font-semibold">{{ doc.issue_date|date:"d M Y" }}</dd></div>
+          <div class="flex justify-between"><dt class="text-slate-500">Amount</dt><dd class="font-semibold">KSh {{ doc.total|floatformat:"2g" }}</dd></div>
+          <div class="flex justify-between"><dt class="text-slate-500">Status</dt><dd class="font-semibold">{{ doc.get_status_display }}</dd></div>
+        </dl>
+      {% else %}
+        <i class="fa-solid fa-circle-xmark text-5xl text-red-600"></i>
+        <h1 class="mt-3 text-xl font-bold">Not verified</h1>
+        <p class="text-sm text-slate-500">This code does not match any document we issued.</p>
+      {% endif %}
+    </div>
+  </div>
+</body>
+</html>

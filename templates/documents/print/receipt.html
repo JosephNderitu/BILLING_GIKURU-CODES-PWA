@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>{{ doc.number }}</title>
+<style>
+{% if page_size %}@page { size: {{ page_size }}; margin: 0; }{% else %}@page { margin: 0; }{% endif %}
+@media print { .no-print { display: none !important; } }
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: #fff; }
+body {
+  width: {{ print_mm }}mm; margin: 0 auto; padding: 3mm 0 10mm;
+  font: {% if paper_mm == 58 %}10px{% else %}11px{% endif %}/1.35 "Courier New", Courier, monospace;
+  color: #000; -webkit-print-color-adjust: exact; print-color-adjust: exact;
+}
+.c { text-align: center; }
+.b { font-weight: 700; }
+.name { font-size: 15px; font-weight: 700; letter-spacing: .5px; line-height: 1.2; }
+.sm { font-size: 10px; }
+.dash { border-top: 1px dashed #000; margin: 2.2mm 0; }
+.row { display: flex; justify-content: space-between; gap: 2mm; }
+.row > span:last-child { text-align: right; white-space: nowrap; }
+.item { margin-bottom: 1.6mm; }
+.item .d { font-weight: 700; word-break: break-word; }
+.item .sn { font-size: 9.5px; padding-left: 3mm; }
+.total { border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 1.2mm 0; margin: 1.5mm 0; font-size: 14px; font-weight: 700; }
+.foot { font-size: 9.5px; text-align: center; line-height: 1.35; }
+.logo { display: block; margin: 0 auto 1.5mm; width: {% if paper_mm == 58 %}16mm{% else %}22mm{% endif %}; height: auto; }
+.qr { display: block; margin: 1.5mm auto 0; width: {% if paper_mm == 58 %}24mm{% else %}30mm{% endif %}; height: auto; }
+</style>
+</head>
+<body>
+{% if toolbar %}
+<div class="no-print" style="text-align:center;margin-bottom:4mm">
+  <button onclick="window.print()" style="background:#16A34A;color:#fff;border:0;padding:8px 18px;border-radius:8px;font-weight:700;cursor:pointer">Print receipt</button>
+</div>
+<script>if (location.search.includes("auto=1")) window.addEventListener("load", () => window.print());</script>
+{% endif %}
+
+<div class="c">
+  {% if receipt_logo %}<img class="logo" src="{{ receipt_logo }}" alt="">{% endif %}
+  <div class="name">{{ p.name|upper }}</div>
+  {% if p.tagline %}<div class="sm">{{ p.tagline }}</div>{% endif %}
+  <div class="sm">{{ p.address|linebreaksbr }}</div>
+  <div class="sm">Tel: {{ p.phone }}</div>
+  {% if p.kra_pin %}<div class="sm">PIN: {{ p.kra_pin }}</div>{% endif %}
+</div>
+
+<div class="dash"></div>
+<div class="c b" style="font-size:13px">SALES RECEIPT</div>
+<div class="sm">
+  <div class="row"><span>Receipt No:</span><span>{{ doc.number }}</span></div>
+  <div class="row"><span>Date:</span><span>{{ doc.created_at|date:"d/m/Y H:i" }}</span></div>
+  <div class="row"><span>Customer:</span><span>{{ doc.display_client }}</span></div>
+  {% if doc.served_by %}<div class="row"><span>Served by:</span><span>{{ doc.served_by }}</span></div>{% endif %}
+</div>
+<div class="dash"></div>
+
+<div class="row b"><span>ITEM</span><span>AMOUNT</span></div>
+<div class="dash" style="margin-top:1mm"></div>
+
+{% for i in items %}
+<div class="item">
+  <div class="d">{{ i.description|upper }}</div>
+  <div class="row"><span>{{ i.quantity|floatformat:"-2" }} x {{ i.unit_price|floatformat:"2g" }}</span><span>{{ i.line_total|floatformat:"2g" }}</span></div>
+  {% if i.serials %}<div class="sn">S/N: {{ i.serials|join:", " }}</div>{% endif %}
+</div>
+{% endfor %}
+
+<div class="dash"></div>
+<div class="row sm"><span>Items: {{ items|length }}</span><span>Total qty: {{ doc.total_qty|floatformat:"-2" }}</span></div>
+{% if doc.discount %}<div class="row"><span>Discount</span><span>- {{ doc.discount|floatformat:"2g" }}</span></div>{% endif %}
+<div class="row"><span>Subtotal</span><span>{{ doc.net_amount|floatformat:"2g" }}</span></div>
+{% if doc.vat_mode != 'none' %}<div class="row"><span>VAT {{ doc.vat_rate|floatformat:"-2" }}%</span><span>{{ doc.vat_amount|floatformat:"2g" }}</span></div>{% endif %}
+<div class="row total"><span>TOTAL (KSh)</span><span>{{ doc.total|floatformat:"2g" }}</span></div>
+
+{% if doc.payment_method %}
+<div class="row"><span>Paid via {{ doc.get_payment_method_display }}</span><span>{{ doc.total|floatformat:"2g" }}</span></div>
+{% if doc.payment_reference %}<div class="sm">Ref: {{ doc.payment_reference }}</div>{% endif %}
+{% endif %}
+{% if doc.notes %}<div class="sm" style="margin-top:1mm">{{ doc.notes|linebreaksbr }}</div>{% endif %}
+
+<div class="dash"></div>
+<div class="c sm">
+  <img class="qr" src="{{ qr }}" alt="">
+  <div style="margin-top:1mm">Scan to verify this receipt</div>
+  <div>{{ doc.number }}</div>
+</div>
+
+<div class="dash"></div>
+<div class="foot"><b>TERMS AND CONDITIONS</b><br>{{ p.receipt_footer|linebreaksbr }}</div>
+<div class="dash"></div>
+<div class="c b">*** THANK YOU ***</div>
+</body>
+</html>

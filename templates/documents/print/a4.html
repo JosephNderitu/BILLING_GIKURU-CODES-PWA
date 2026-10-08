@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>{{ doc.number }}</title>
+<style>
+@page { size: A4; margin: 0; }
+* { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+html, body { margin: 0; }
+body { font-family: Helvetica, Arial, sans-serif; font-size: 10pt; color: #0F172A; background: #fff; }
+.sheet { width: 210mm; margin: 0 auto; position: relative; }
+.band { position: absolute; top: 0; left: 0; right: 0; height: 6mm;
+  background: linear-gradient(90deg, #16A34A 0%, #16A34A 55%, #F5B301 55%, #F5B301 80%, #1B2FA8 80%, #1B2FA8 100%); }
+table { border-collapse: collapse; width: 100%; }
+td, th { vertical-align: top; }
+.spacer td { height: 12mm; padding: 0; }
+.pad { padding: 0 14mm; }
+.logo { height: 26mm; }
+.biz { font-size: 8.5pt; color: #475569; line-height: 1.55; }
+.biz b { color: #0F172A; font-size: 11pt; }
+.doc-title { font-size: 27pt; font-weight: 700; color: {{ accent }}; letter-spacing: 1px; text-align: right; margin: 0; }
+.meta { font-size: 9pt; text-align: right; line-height: 1.7; color: #475569; }
+.meta b { color: #0F172A; }
+.pill { display: inline-block; padding: 0.8mm 3mm; border-radius: 6mm; font-size: 8pt; font-weight: 700; color: #fff; background: {{ accent }}; }
+.rule { height: 1mm; background: #F5B301; margin: 6mm 0 0; }
+.label { font-size: 8pt; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: {{ accent }}; margin-bottom: 1.5mm; }
+.items { margin-top: 8mm; }
+.items th { background: {{ accent }}; color: #fff; font-size: 8.5pt; text-align: left; padding: 2.6mm 3mm; }
+.items td { padding: 2.6mm 3mm; border-bottom: 1px solid #E2E8F0; }
+.items tr { break-inside: avoid; }
+.items tbody tr:nth-child(even) td { background: #F8FAFC; }
+.r { text-align: right; }
+.sn { font-size: 7.5pt; color: #64748B; white-space: pre-line; margin-top: 0.8mm; }
+.totals { width: 80mm; margin: 5mm 0 0 auto; break-inside: avoid; }
+.totals td { padding: 1.8mm 3mm; font-size: 9.5pt; }
+.totals .grand td { background: {{ accent }}; color: #fff; font-weight: 700; font-size: 11pt; }
+.cols { margin-top: 9mm; break-inside: avoid; }
+.cols td { width: 50%; padding-right: 6mm; font-size: 8.5pt; color: #475569; line-height: 1.55; }
+.sign { margin-top: 12mm; break-inside: avoid; }
+.sign img.sig { height: 18mm; }
+.sign img.stp { height: 34mm; }
+.line { border-top: 1px solid #94A3B8; width: 62mm; margin-top: 1mm; }
+.pfoot { text-align: center; font-size: 8pt; color: #64748B; padding: 8mm 0 6mm; }
+</style>
+</head>
+<body>
+<div class="sheet">
+  <div class="band"></div>
+  <table>
+    <thead class="spacer"><tr><td></td></tr></thead>
+    <tbody><tr><td class="pad">
+
+    <table style="margin-top:2mm">
+      <tr>
+        <td style="width:55%">
+          {% if logo %}<img class="logo" src="{{ logo }}" alt="">{% endif %}
+          <div class="biz" style="margin-top:2mm">
+            {{ p.address|linebreaksbr }}<br>
+            {{ p.phone }}{% if p.email %} &middot; {{ p.email }}{% endif %}
+            {% if p.kra_pin %}<br>KRA PIN: {{ p.kra_pin }}{% endif %}
+          </div>
+        </td>
+        <td>
+          <p class="doc-title">{{ title }}</p>
+          <div class="meta">
+            <b>{{ doc.number }}</b><br>
+            Issued: {{ doc.issue_date|date:"d M Y" }}<br>
+            {% if doc.due_date %}{% if doc.doc_type == 'quotation' %}Valid until{% else %}Due{% endif %}: {{ doc.due_date|date:"d M Y" }}<br>{% endif %}
+            <span class="pill">{{ doc.get_status_display|upper }}</span>
+          </div>
+        </td>
+      </tr>
+    </table>
+    <div class="rule"></div>
+
+    <div style="margin-top:7mm">
+      <div class="label">Billed to</div>
+      <b style="font-size:11pt">{{ doc.display_client }}</b>
+      {% if doc.client %}
+      <div class="biz">{{ doc.client.address|linebreaksbr }}<br>{{ doc.client.phone }}{% if doc.client.email %} &middot; {{ doc.client.email }}{% endif %}{% if doc.client.kra_pin %}<br>KRA PIN: {{ doc.client.kra_pin }}{% endif %}</div>
+      {% endif %}
+    </div>
+
+    <table class="items">
+      <thead><tr>
+        <th style="width:6%">#</th><th>Description</th>
+        <th class="r" style="width:10%">Qty</th><th class="r" style="width:17%">Unit price</th><th class="r" style="width:18%">Amount</th>
+      </tr></thead>
+      <tbody>
+      {% for i in items %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+          <td><b>{{ i.description }}</b>{% if i.serial_numbers %}<div class="sn">{{ i.serial_numbers }}</div>{% endif %}</td>
+          <td class="r">{{ i.quantity|floatformat:"-2" }}</td>
+          <td class="r">{{ i.unit_price|floatformat:"2g" }}</td>
+          <td class="r">{{ i.line_total|floatformat:"2g" }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+
+    <table class="totals">
+      {% if doc.discount %}
+      <tr><td>Items total</td><td class="r">{{ doc.items_total|floatformat:"2g" }}</td></tr>
+      <tr><td>Discount</td><td class="r">- {{ doc.discount|floatformat:"2g" }}</td></tr>
+      {% endif %}
+      <tr><td>Subtotal</td><td class="r">{{ doc.net_amount|floatformat:"2g" }}</td></tr>
+      {% if doc.vat_mode != 'none' %}<tr><td>VAT ({{ doc.vat_rate|floatformat:"-2" }}%)</td><td class="r">{{ doc.vat_amount|floatformat:"2g" }}</td></tr>{% endif %}
+      <tr class="grand"><td>Total (KSh)</td><td class="r">{{ doc.total|floatformat:"2g" }}</td></tr>
+    </table>
+
+    <table class="cols"><tr>
+      <td>
+        {% if p.payment_details and doc.doc_type == 'invoice' %}<div class="label">Payment details</div>{{ p.payment_details|linebreaksbr }}<br><br>{% endif %}
+        {% if doc.notes %}<div class="label">Notes</div>{{ doc.notes|linebreaksbr }}{% endif %}
+      </td>
+      <td>{% if doc.terms %}<div class="label">Terms and conditions</div>{{ doc.terms|linebreaksbr }}{% endif %}</td>
+    </tr></table>
+
+    <table class="sign"><tr>
+      <td style="width:55%">
+        {% if signature %}<img class="sig" src="{{ signature }}" alt="">{% endif %}
+        <div class="line"></div>
+        <div class="biz"><b style="font-size:9pt">Authorised signature</b><br>{{ p.name }}</div>
+      </td>
+      <td class="r">{% if stamp %}<img class="stp" src="{{ stamp }}" alt="">{% endif %}</td>
+    </tr></table>
+
+    {% if not for_pdf %}<div class="pfoot">{{ p.name }} | {{ p.tagline }}</div>{% endif %}
+
+    </td></tr></tbody>
+  </table>
+</div>
+</body>
+</html>

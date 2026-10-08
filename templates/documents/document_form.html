@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-6">
+  {% if doc.pk %}Edit {{ doc.number }}{% else %}New {{ meta.label }}{% endif %}</h1>
+
+<form method="post" id="doc-form" data-vat="{{ vat_rate }}" class="space-y-8">
+  {% csrf_token %}
+  {{ form.non_field_errors }}
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    {% for f in form %}
+    <div class="{% if f.name == 'notes' or f.name == 'terms' %}md:col-span-3{% endif %}">
+      <label class="block text-xs font-semibold text-slate-600 mb-1">{{ f.label }}</label>
+      {{ f }}
+      {% for e in f.errors %}<p class="text-xs text-red-600 mt-1">{{ e }}</p>{% endfor %}
+    </div>
+    {% endfor %}
+  </div>
+
+  <div>
+    <h2 class="font-semibold mb-3">Line items</h2>
+    {{ formset.management_form }}
+    {{ formset.non_form_errors }}
+    <div class="rounded-xl border border-slate-200 overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-slate-50 text-left text-slate-500">
+          <tr><th class="p-2 w-[34%]">Description</th><th class="p-2 w-[22%]">Serials</th>
+              <th class="p-2 w-[10%]">Qty</th><th class="p-2 w-[14%]">Unit price</th>
+              <th class="p-2 text-right w-[14%]">Line total</th><th class="p-2 w-8"></th></tr>
+        </thead>
+        <tbody id="items-body">
+          {% for f in formset %}
+          <tr class="item-row border-t border-slate-100 align-top">
+            <td class="p-2">{% for h in f.hidden_fields %}{{ h }}{% endfor %}{{ f.description }}{{ f.description.errors }}</td>
+            <td class="p-2">{{ f.serial_numbers }}</td>
+            <td class="p-2">{{ f.quantity }}{{ f.quantity.errors }}</td>
+            <td class="p-2">{{ f.unit_price }}{{ f.unit_price.errors }}</td>
+            <td class="p-2 text-right font-medium line-total pt-4">0.00</td>
+            <td class="p-2 pt-3"><span class="hidden">{{ f.DELETE }}</span>
+              <button type="button" class="remove-row text-slate-400 hover:text-red-600"><i class="fa-solid fa-trash"></i></button></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <button type="button" id="add-row" class="mt-3 text-sm font-semibold text-brand-green">
+      <i class="fa-solid fa-plus mr-1"></i> Add item</button>
+  </div>
+
+  <div class="ml-auto w-full md:w-80 rounded-xl border border-slate-200 p-4 text-sm space-y-2">
+    <div class="flex justify-between"><span class="text-slate-500">Subtotal</span><span id="t-net">0.00</span></div>
+    <div class="flex justify-between"><span class="text-slate-500">VAT</span><span id="t-vat">0.00</span></div>
+    <div class="flex justify-between border-t pt-2 text-base font-bold"><span>Total (KSh)</span><span id="t-total">0.00</span></div>
+  </div>
+
+  <div class="flex gap-3">
+    <button class="bg-brand-green hover:bg-green-800 text-white font-semibold px-6 py-2.5 rounded-lg">
+      <i class="fa-solid fa-floppy-disk mr-1"></i> Save</button>
+    <a href="{% url 'documents:dashboard' %}" class="px-6 py-2.5 rounded-lg border border-slate-300 font-semibold">Cancel</a>
+  </div>
+</form>
+
+<template id="row-tpl">
+  <tr class="item-row border-t border-slate-100 align-top">
+    <td class="p-2">{% for h in formset.empty_form.hidden_fields %}{{ h }}{% endfor %}{{ formset.empty_form.description }}</td>
+    <td class="p-2">{{ formset.empty_form.serial_numbers }}</td>
+    <td class="p-2">{{ formset.empty_form.quantity }}</td>
+    <td class="p-2">{{ formset.empty_form.unit_price }}</td>
+    <td class="p-2 text-right font-medium line-total pt-4">0.00</td>
+    <td class="p-2 pt-3"><span class="hidden">{{ formset.empty_form.DELETE }}</span>
+      <button type="button" class="remove-row text-slate-400 hover:text-red-600"><i class="fa-solid fa-trash"></i></button></td>
+  </tr>
+</template>
+
+<script>
+(() => {
+  const form = document.getElementById("doc-form");
+  const body = document.getElementById("items-body");
+  const totalForms = document.getElementById("id_items-TOTAL_FORMS");
+  const discount = document.getElementById("id_discount");
+  const vatMode = document.getElementById("id_vat_mode");
+  const rate = parseFloat(form.dataset.vat) || 16;
+  const num = v => parseFloat(v) || 0;
+  const fmt = n => n.toLocaleString("en-KE", {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+  function recalc() {
+    let sum = 0;
+    body.querySelectorAll("tr.item-row:not(.hidden)").forEach(row => {
+      const q = num(row.querySelector('[name$="-quantity"]').value);
+      const p = num(row.querySelector('[name$="-unit_price"]').value);
+      row.querySelector(".line-total").textContent = fmt(q * p);
+      sum += q * p;
+    });
+    const gross = Math.max(sum - num(discount.value), 0);
+    let net = gross, vat = 0, total = gross;
+    if (vatMode.value === "exclusive") { vat = gross * rate / 100; total = gross + vat; }
+    else if (vatMode.value === "inclusive") { net = gross / (1 + rate / 100); vat = gross - net; }
+    document.getElementById("t-net").textContent = fmt(net);
+    document.getElementById("t-vat").textContent = fmt(vat);
+    document.getElementById("t-total").textContent = fmt(total);
+  }
+
+  document.getElementById("add-row").addEventListener("click", () => {
+    const idx = parseInt(totalForms.value, 10);
+    body.insertAdjacentHTML("beforeend",
+      document.getElementById("row-tpl").innerHTML.replace(/__prefix__/g, idx));
+    totalForms.value = idx + 1;
+    recalc();
+  });
+
+  body.addEventListener("click", e => {
+    const btn = e.target.closest(".remove-row");
+    if (!btn) return;
+    const row = btn.closest("tr");
+    row.querySelector('[name$="-DELETE"]').checked = true;
+    row.classList.add("hidden");
+    recalc();
+  });
+
+  form.addEventListener("input", recalc);
+  recalc();
+})();
+</script>
+{% endblock %}

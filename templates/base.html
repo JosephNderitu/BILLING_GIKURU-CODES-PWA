@@ -1,0 +1,57 @@
+<!-- templates/base.html -->
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Billing{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: {
+        colors: {
+          brand: {
+            green: "#15803D",
+            gold: "#F5B301",
+            blue: "#1D4ED8",
+            ink: "#0F172A"
+          }
+        },
+        fontFamily: { sans: ["Inter", "system-ui", "sans-serif"] }
+      }}
+    }
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-white text-brand-ink font-sans antialiased">
+  <div class="flex min-h-screen">
+    <aside class="w-64 border-r border-slate-200 p-5 hidden md:block">
+      <div class="flex items-center gap-2 mb-8">
+        <span class="h-9 w-9 rounded-lg bg-brand-green text-white grid place-items-center">
+          <i class="fa-solid fa-file-invoice"></i>
+        </span>
+        <span class="font-bold text-lg">Billing</span>
+      </div>
+        <nav class="space-y-1 text-sm font-medium">
+            <a href="{% url 'documents:dashboard' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-100">
+                <i class="fa-solid fa-gauge w-4"></i> Dashboard</a>
+            <a href="{% url 'documents:list' 'quotation' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-100">
+                <i class="fa-solid fa-file-lines w-4 text-brand-blue"></i> Quotations</a>
+            <a href="{% url 'documents:list' 'invoice' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-100">
+                <i class="fa-solid fa-file-invoice-dollar w-4 text-brand-green"></i> Invoices</a>
+            <a href="{% url 'documents:list' 'receipt' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-100">
+                <i class="fa-solid fa-receipt w-4 text-brand-gold"></i> Receipts</a>
+        </nav>
+    </aside>
+    <main class="flex-1 p-6 md:p-10">
+        {% for m in messages %}
+        <div class="mb-6 rounded-lg border border-brand-green/30 bg-brand-green/10 text-brand-green px-4 py-3 text-sm">
+            <i class="fa-solid fa-circle-check mr-2"></i>{{ m }}</div>
+        {% endfor %}
+        {% block content %}{% endblock %}
+    </main>
+  </div>
+</body>
+</html>
