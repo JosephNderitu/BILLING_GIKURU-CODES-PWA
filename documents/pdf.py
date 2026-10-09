@@ -112,6 +112,9 @@ def build_context(doc, for_pdf=False, **extra):
         ctx["receipt_logo"] = receipt_logo_uri(biz.logo)
         ctx["qr"] = qr_data_uri(doc)
 
+    ctx["etims_qr_img"] = (
+        segno.make(doc.etims_qr, error="m").svg_data_uri(scale=4, border=1, dark="#000000", light="#FFFFFF")
+        if doc.etims_qr else "")
     ctx.update(extra)
     return ctx
 

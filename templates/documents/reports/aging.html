@@ -1,0 +1,31 @@
+{% extends "documents/reports/base.html" %}
+{% block actions %}
+<a href="?export=xlsx" class="no-print px-4 py-2 rounded-lg bg-brand-green text-white text-sm font-semibold text-center"><i class="fa-solid fa-file-excel mr-1"></i> Excel</a>
+{% endblock %}
+{% block report %}
+<div class="grid grid-cols-2 lg:grid-cols-6 gap-3 mb-6">
+  {% for label, amount in buckets %}
+  <div class="rounded-xl border border-slate-200 p-4"><p class="text-xs font-semibold text-slate-500 uppercase">{{ label }}</p>
+    <p class="mt-1 font-bold {% if forloop.counter > 2 and amount %}text-red-600{% endif %}">KSh {{ amount|floatformat:"2g" }}</p></div>
+  {% endfor %}
+  <div class="rounded-xl border border-brand-green/40 bg-brand-green/5 p-4"><p class="text-xs font-semibold text-slate-500 uppercase">Total unpaid</p><p class="mt-1 font-bold text-brand-green">KSh {{ grand|floatformat:"2g" }}</p></div>
+</div>
+<h2 class="font-semibold mb-2">By client</h2>
+<div class="rounded-xl border border-slate-200 overflow-x-auto mb-6"><table class="w-full text-sm">
+  <thead class="bg-slate-50 text-left text-slate-500"><tr><th class="p-3">Client</th>{% for l in labels %}<th class="p-3 text-right whitespace-nowrap">{{ l }}</th>{% endfor %}<th class="p-3 text-right">Total</th></tr></thead>
+  {% for c in clients %}<tr class="border-t border-slate-100"><td class="p-3 font-semibold">{{ c.name }}</td>
+    {% for v in c.cells %}<td class="p-3 text-right whitespace-nowrap">{% if v %}{{ v|floatformat:"2g" }}{% else %}-{% endif %}</td>{% endfor %}
+    <td class="p-3 text-right whitespace-nowrap font-bold">{{ c.total|floatformat:"2g" }}</td></tr>
+  {% empty %}<tr><td colspan="7" class="p-8 text-center text-slate-400">No unpaid invoices. Nice.</td></tr>{% endfor %}
+</table></div>
+<h2 class="font-semibold mb-2">Unpaid invoices</h2>
+<div class="rounded-xl border border-slate-200 overflow-x-auto"><table class="w-full text-sm">
+  <thead class="bg-slate-50 text-left text-slate-500"><tr><th class="p-3">Invoice</th><th class="p-3">Client</th><th class="p-3">Due</th><th class="p-3 text-right">Days overdue</th><th class="p-3 text-right">Amount</th></tr></thead>
+  {% for r in detail %}<tr class="border-t border-slate-100">
+    <td class="p-3 font-semibold"><a class="text-brand-blue" href="{% url 'documents:detail' r.doc.pk %}">{{ r.doc.number }}</a></td>
+    <td class="p-3">{{ r.doc.display_client }}</td><td class="p-3 whitespace-nowrap">{{ r.due|date:"d M Y" }}</td>
+    <td class="p-3 text-right {% if r.days > 30 %}text-red-600 font-semibold{% endif %}">{{ r.days }}</td>
+    <td class="p-3 text-right whitespace-nowrap font-semibold">{{ r.amount|floatformat:"2g" }}</td></tr>{% endfor %}
+</table></div>
+<p class="text-xs text-slate-500 mt-3">Counts invoices with status Sent. The due date is used, or the issue date if none is set.</p>
+{% endblock %}

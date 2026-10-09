@@ -22,6 +22,10 @@
       input:not([type=checkbox]):not([type=radio]), select, textarea { font-size: 16px !important; }
     }
     html { -webkit-text-size-adjust: 100%; }
+    @media print {
+      aside, header, .no-print { display: none !important; }
+      main { padding: 0 !important; }
+    }
   </style>
 </head>
 <body class="bg-white text-brand-ink font-sans antialiased">
@@ -67,6 +71,12 @@
         <a href="{% url 'documents:delivery_list' %}"
            class="flex items-center gap-3 px-3 py-2.5 rounded-lg {% if 'delivery' in t %}bg-brand-blue/10 text-brand-blue{% else %}hover:bg-slate-100{% endif %}">
           <i class="fa-solid fa-truck w-4 text-brand-blue"></i> Deliveries</a>
+        <a href="{% url 'documents:product_list' %}"
+           class="flex items-center gap-3 px-3 py-2.5 rounded-lg {% if 'product' in t %}bg-brand-green/10 text-brand-green{% else %}hover:bg-slate-100{% endif %}">
+          <i class="fa-solid fa-boxes-stacked w-4 text-brand-green"></i> Products</a>
+        <a href="{% url 'documents:report_sales' %}"
+           class="flex items-center gap-3 px-3 py-2.5 rounded-lg {% if 'report' in t %}bg-brand-blue/10 text-brand-blue{% else %}hover:bg-slate-100{% endif %}">
+          <i class="fa-solid fa-chart-column w-4 text-brand-blue"></i> Reports</a>
       </nav>
 
       <div class="mt-8 pt-4 border-t border-slate-200 text-sm">
@@ -79,6 +89,7 @@
       {% for m in messages %}
       <div class="mb-5 rounded-lg border px-4 py-3 text-sm {% if m.tags == 'error' %}border-red-300 bg-red-50 text-red-700{% else %}border-brand-green/30 bg-brand-green/10 text-brand-green{% endif %}">
         {{ m }}</div>
+      {% if m.tags == 'error' %}border-red-300 bg-red-50 text-red-700{% elif m.tags == 'warning' %}border-amber-300 bg-amber-50 text-amber-800{% else %}border-brand-green/30 bg-brand-green/10 text-brand-green{% endif %}
       {% endfor %}
       {% block content %}{% endblock %}
     </main>

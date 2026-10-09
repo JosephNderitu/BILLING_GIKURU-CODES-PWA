@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 no-print">
+  <h1 class="text-2xl font-bold">Reports</h1>
+  {% block actions %}{% endblock %}
+</div>
+<div class="flex gap-1 overflow-x-auto border-b border-slate-200 mb-5 text-sm font-semibold no-print">
+  {% for key, label, name in tabs %}{% endfor %}
+  <a href="{% url 'documents:report_sales' %}" class="px-4 py-2.5 whitespace-nowrap {% if tab == 'sales' %}border-b-2 border-brand-green text-brand-green{% else %}text-slate-500 hover:text-brand-ink{% endif %}">Sales by month</a>
+  <a href="{% url 'documents:report_vat' %}" class="px-4 py-2.5 whitespace-nowrap {% if tab == 'vat' %}border-b-2 border-brand-green text-brand-green{% else %}text-slate-500 hover:text-brand-ink{% endif %}">VAT summary</a>
+  <a href="{% url 'documents:report_aging' %}" class="px-4 py-2.5 whitespace-nowrap {% if tab == 'aging' %}border-b-2 border-brand-green text-brand-green{% else %}text-slate-500 hover:text-brand-ink{% endif %}">Aging</a>
+  <a href="{% url 'documents:report_statements' %}" class="px-4 py-2.5 whitespace-nowrap {% if tab == 'statements' %}border-b-2 border-brand-green text-brand-green{% else %}text-slate-500 hover:text-brand-ink{% endif %}">Client statements</a>
+</div>
+{% block report %}{% endblock %}
+{% endblock %}

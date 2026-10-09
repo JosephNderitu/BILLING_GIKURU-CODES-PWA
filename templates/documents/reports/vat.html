@@ -1,0 +1,37 @@
+{% extends "documents/reports/base.html" %}
+{% block actions %}
+<a href="?{% if querystring %}{{ querystring }}&amp;{% endif %}export=xlsx" class="no-print px-4 py-2 rounded-lg bg-brand-green text-white text-sm font-semibold text-center"><i class="fa-solid fa-file-excel mr-1"></i> Excel</a>
+{% endblock %}
+{% block report %}
+<form method="get" class="grid grid-cols-2 md:flex md:items-end gap-3 mb-5 text-sm no-print">
+  <div><label class="block text-xs font-semibold text-slate-600 mb-1">From</label><input type="date" name="from" value="{{ start|date:'Y-m-d' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2"></div>
+  <div><label class="block text-xs font-semibold text-slate-600 mb-1">To</label><input type="date" name="to" value="{{ end|date:'Y-m-d' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2"></div>
+  <button class="col-span-2 md:col-span-1 bg-brand-blue text-white font-semibold px-4 py-2 rounded-lg">Apply</button>
+</form>
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+  <div class="rounded-xl border border-slate-200 p-4"><p class="text-xs font-semibold text-slate-500 uppercase">Taxable sales (net)</p><p class="mt-1 text-lg font-bold">KSh {{ taxable|floatformat:"2g" }}</p></div>
+  <div class="rounded-xl border border-slate-200 p-4"><p class="text-xs font-semibold text-slate-500 uppercase">Output VAT</p><p class="mt-1 text-lg font-bold text-brand-blue">KSh {{ vat_total|floatformat:"2g" }}</p></div>
+  <div class="rounded-xl border border-slate-200 p-4"><p class="text-xs font-semibold text-slate-500 uppercase">Sales without VAT</p><p class="mt-1 text-lg font-bold">KSh {{ exempt|floatformat:"2g" }}</p></div>
+  <div class="rounded-xl border border-slate-200 p-4"><p class="text-xs font-semibold text-slate-500 uppercase">Total sales</p><p class="mt-1 text-lg font-bold text-brand-green">KSh {{ gross|floatformat:"2g" }}</p></div>
+</div>
+{% if months|length > 1 %}
+<div class="rounded-xl border border-slate-200 overflow-x-auto mb-6"><table class="w-full text-sm">
+  <thead class="bg-slate-50 text-left text-slate-500"><tr><th class="p-3">Month</th><th class="p-3 text-right">Taxable net</th><th class="p-3 text-right">VAT</th><th class="p-3 text-right">No VAT</th></tr></thead>
+  {% for key, m in months %}<tr class="border-t border-slate-100"><td class="p-3 font-semibold">{{ key }}</td>
+    <td class="p-3 text-right">{{ m.net|floatformat:"2g" }}</td><td class="p-3 text-right">{{ m.vat|floatformat:"2g" }}</td><td class="p-3 text-right">{{ m.none|floatformat:"2g" }}</td></tr>{% endfor %}
+</table></div>
+{% endif %}
+<h2 class="font-semibold mb-2">Documents in this period</h2>
+<div class="rounded-xl border border-slate-200 overflow-x-auto"><table class="w-full text-sm">
+  <thead class="bg-slate-50 text-left text-slate-500"><tr><th class="p-3">Date</th><th class="p-3">Number</th><th class="p-3">Client</th><th class="p-3">Buyer PIN</th><th class="p-3">eTIMS no.</th><th class="p-3 text-right">Net</th><th class="p-3 text-right">VAT</th><th class="p-3 text-right">Total</th></tr></thead>
+  {% for d in docs %}<tr class="border-t border-slate-100">
+    <td class="p-3 whitespace-nowrap">{{ d.issue_date|date:"d M Y" }}</td>
+    <td class="p-3 font-semibold"><a class="text-brand-blue" href="{% url 'documents:detail' d.pk %}">{{ d.number }}</a></td>
+    <td class="p-3">{{ d.display_client }}</td><td class="p-3">{{ d.buyer_pin_display|default:"-" }}</td>
+    <td class="p-3">{% if d.etims_invoice_no %}{{ d.etims_invoice_no }}{% else %}<span class="text-amber-600 text-xs font-semibold">missing</span>{% endif %}</td>
+    <td class="p-3 text-right whitespace-nowrap">{{ d.net_amount|floatformat:"2g" }}</td><td class="p-3 text-right whitespace-nowrap">{{ d.vat_amount|floatformat:"2g" }}</td>
+    <td class="p-3 text-right whitespace-nowrap font-semibold">{{ d.total|floatformat:"2g" }}</td></tr>
+  {% empty %}<tr><td colspan="8" class="p-8 text-center text-slate-400">No sales in this period.</td></tr>{% endfor %}
+</table></div>
+<p class="text-xs text-slate-500 mt-3">Output VAT only. Purchases (input VAT) are not tracked here. Use the eTIMS column to reconcile with KRA before filing.</p>
+{% endblock %}

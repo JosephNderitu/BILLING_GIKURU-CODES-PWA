@@ -9,7 +9,9 @@ from .meta import STATUS_STYLES
 from types import SimpleNamespace
 import uuid
 from pathlib import Path
-
+import secrets
+from django.db.models import Sum, Value
+from django.db.models.functions import Coalesce
 
 class BusinessProfile(models.Model):
     name = models.CharField(max_length=150)
@@ -96,6 +98,12 @@ class Document(models.Model):
     payment_reference = models.CharField(max_length=60, blank=True)
     notes = models.TextField(blank=True)
     terms = models.TextField(blank=True)
+    buyer_pin = models.CharField("Buyer KRA PIN", max_length=20, blank=True)
+    etims_invoice_no = models.CharField("eTIMS invoice no.", max_length=60, blank=True)
+    etims_qr = models.CharField("eTIMS QR data or link", max_length=500, blank=True,
+                                help_text="Paste the QR link or data KRA gives you for this invoice")
+    share_token = models.CharField(max_length=32, unique=True, null=True, blank=True, editable=False)
+    share_viewed_at = models.DateTimeField(null=True, blank=True, editable=False)
     business = models.JSONField(default=dict, blank=True, editable=False)
     source = models.ForeignKey("self", null=True, blank=True, on_delete=models.SET_NULL,
                                related_name="converted")
@@ -178,6 +186,27 @@ class Document(models.Model):
     def status_style(self):
         return STATUS_STYLES["overdue" if self.is_overdue else self.status]
 
+    @property
+    def buyer_pin_display(self):
+        return self.buyer_pin or (self.client.kra_pin if self.client else "")
+
+    @property
+    def is_sale(self):
+        """Counts as a sale (reports and stock). A receipt issued from an invoice is not counted twice."""
+        if self.doc_type == self.INVOICE:
+            return self.status in ("sent", "paid")
+        if self.doc_type == self.RECEIPT:
+            return self.status == "paid" and not (self.source_id and self.source.doc_type == self.INVOICE)
+        return False
+
+    def ensure_share_token(self, regenerate=False):
+        if regenerate or not self.share_token:
+            self.share_token = secrets.token_urlsafe(18)
+            if regenerate:
+                self.share_viewed_at = None
+            self.save(update_fields=["share_token", "share_viewed_at"])
+        return self.share_token
+    
     def save(self, *args, **kwargs):
         if not self.number:
             year = timezone.localdate().year
@@ -200,6 +229,8 @@ class DocumentItem(models.Model):
     serial_numbers = models.TextField(blank=True, help_text="Optional, one per line")
     quantity = models.DecimalField(max_digits=10, decimal_places=2, default=1)
     unit_price = models.DecimalField(max_digits=12, decimal_places=2)
+    product = models.ForeignKey("Product", null=True, blank=True, on_delete=models.SET_NULL,
+                                related_name="sold_items")
 
     @property
     def serials(self):
@@ -314,3 +345,71 @@ class DeliveryItem(models.Model):
     @property
     def colspan(self):
         return len(self.boxes) + 1
+    
+class ProductQuerySet(models.QuerySet):
+    def with_stock(self):
+        return self.annotate(on_hand=Coalesce(
+            Sum("movements__qty"), Value(Decimal("0")),
+            output_field=models.DecimalField(max_digits=12, decimal_places=2)))
+
+
+class Product(models.Model):
+    name = models.CharField(max_length=200)
+    sku = models.CharField("SKU", max_length=40, blank=True)
+    category = models.CharField(max_length=10, choices=DeliveryItem.CATEGORIES, default="other",
+                                help_text="Sets the delivery checklist used for this item")
+    unit_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    track_stock = models.BooleanField(default=False)
+    track_serials = models.BooleanField("Track serial numbers", default=False,
+                                        help_text="Registers each unit's serial (turns on stock tracking)")
+    reorder_level = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    active = models.BooleanField(default=True)
+
+    objects = ProductQuerySet.as_manager()
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        if self.track_serials:
+            self.track_stock = True
+        super().save(*args, **kwargs)
+
+    @property
+    def stock(self):
+        return self.movements.aggregate(s=Sum("qty"))["s"] or Decimal("0")
+
+
+class StockMovement(models.Model):
+    PURCHASE, SALE, ADJUST = "purchase", "sale", "adjustment"
+    REASONS = [(PURCHASE, "Stock received"), (SALE, "Sale"), (ADJUST, "Adjustment")]
+
+    product = models.ForeignKey(Product, related_name="movements", on_delete=models.CASCADE)
+    qty = models.DecimalField(max_digits=12, decimal_places=2)
+    reason = models.CharField(max_length=10, choices=REASONS)
+    document = models.ForeignKey(Document, null=True, blank=True, related_name="stock_movements",
+                                 on_delete=models.CASCADE)
+    note = models.CharField(max_length=120, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+
+
+class ProductSerial(models.Model):
+    IN_STOCK, SOLD = "in_stock", "sold"
+    STATUSES = [(IN_STOCK, "In stock"), (SOLD, "Sold")]
+
+    product = models.ForeignKey(Product, related_name="serials", on_delete=models.CASCADE)
+    serial = models.CharField(max_length=80)
+    status = models.CharField(max_length=10, choices=STATUSES, default=IN_STOCK)
+    document = models.ForeignKey(Document, null=True, blank=True, related_name="sold_serials",
+                                 on_delete=models.SET_NULL)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["serial"]
+        constraints = [models.UniqueConstraint(fields=["product", "serial"], name="uniq_product_serial")]

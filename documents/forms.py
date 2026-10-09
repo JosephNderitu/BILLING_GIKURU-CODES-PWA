@@ -1,7 +1,7 @@
 from django import forms
 from django.forms import inlineformset_factory
 
-from .models import Document, DocumentItem
+from .models import Document, DocumentItem, Product, ProductSerial
 
 INPUT = ("w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none "
          "focus:border-brand-green focus:ring-2 focus:ring-brand-green/20")
@@ -20,12 +20,12 @@ class StyledMixin:
             if not isinstance(f.widget, forms.CheckboxInput):
                 f.widget.attrs.setdefault("class", INPUT)
 
-
 class DocumentForm(StyledMixin, forms.ModelForm):
     class Meta:
         model = Document
         fields = ["client", "client_name", "issue_date", "due_date", "status", "vat_mode",
-                  "discount", "payment_method", "payment_reference", "served_by", "notes", "terms"]
+                  "discount", "payment_method", "payment_reference", "served_by",
+                  "buyer_pin", "etims_invoice_no", "etims_qr", "notes", "terms"]
         widgets = {
             "issue_date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
             "due_date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
@@ -37,8 +37,12 @@ class DocumentForm(StyledMixin, forms.ModelForm):
 
     def __init__(self, *args, doc_type, **kwargs):
         super().__init__(*args, **kwargs)
-        drop = ["due_date", "terms"] if doc_type == Document.RECEIPT else \
-               ["payment_method", "payment_reference", "served_by"]
+        drop = {
+            "quotation": ["payment_method", "payment_reference", "served_by",
+                          "buyer_pin", "etims_invoice_no", "etims_qr"],
+            "invoice": ["payment_method", "payment_reference", "served_by"],
+            "receipt": ["due_date", "terms"],
+        }[doc_type]
         for name in drop:
             del self.fields[name]
         self.fields["status"].choices = STATUS_CHOICES[doc_type]
@@ -49,14 +53,32 @@ class DocumentForm(StyledMixin, forms.ModelForm):
 class ItemForm(StyledMixin, forms.ModelForm):
     class Meta:
         model = DocumentItem
-        fields = ["description", "serial_numbers", "quantity", "unit_price"]
+        fields = ["product", "description", "serial_numbers", "quantity", "unit_price"]
         widgets = {
-            "description": forms.TextInput(attrs={"placeholder": "Item or service"}),
+            "product": forms.HiddenInput(),
+            "description": forms.TextInput(attrs={
+                "placeholder": "Type or pick a product", "list": "products-dl", "autocomplete": "off"}),
             "serial_numbers": forms.Textarea(attrs={"rows": 1, "placeholder": "Serial numbers (optional)"}),
             "quantity": forms.NumberInput(attrs={"step": "0.01", "min": "0"}),
             "unit_price": forms.NumberInput(attrs={"step": "0.01", "min": "0"}),
         }
 
+
+class ProductForm(StyledMixin, forms.ModelForm):
+    class Meta:
+        model = Product
+        fields = ["name", "sku", "category", "unit_price", "track_stock", "track_serials",
+                  "reorder_level", "active"]
+        widgets = {"unit_price": forms.NumberInput(attrs={"step": "0.01", "min": "0"}),
+                   "reorder_level": forms.NumberInput(attrs={"step": "1", "min": "0"})}
+
+
+class ReceiveStockForm(StyledMixin, forms.Form):
+    reason = forms.ChoiceField(choices=[("purchase", "Stock received"), ("adjustment", "Adjustment (can be negative)")])
+    qty = forms.DecimalField(required=False, max_digits=12, decimal_places=2, label="Quantity")
+    serials = forms.CharField(required=False, label="Serial numbers (one per line)",
+                              widget=forms.Textarea(attrs={"rows": 4}))
+    note = forms.CharField(required=False, max_length=120, label="Note (supplier, invoice no.)")
 
 ItemFormSet = inlineformset_factory(
     Document, DocumentItem, form=ItemForm, extra=1, can_delete=True)

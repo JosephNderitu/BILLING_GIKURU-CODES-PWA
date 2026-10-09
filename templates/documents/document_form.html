@@ -48,6 +48,10 @@
 
 <template id="row-tpl">{% include "documents/_item_row.html" with f=formset.empty_form %}</template>
 
+<datalist id="products-dl">
+  {% for p in products %}<option value="{{ p.name }}" data-id="{{ p.pk }}" data-price="{{ p.unit_price|stringformat:'.2f' }}" label="{% if p.track_stock %}Stock {{ p.on_hand|floatformat:'-2' }} | {% endif %}KSh {{ p.unit_price|floatformat:'2g' }}"></option>{% endfor %}
+</datalist>
+
 <script>
 (() => {
   const form = document.getElementById("doc-form");
@@ -90,6 +94,23 @@
     const row = btn.closest(".item-row");
     row.querySelector('[name$="-DELETE"]').checked = true;
     row.classList.add("hidden");
+    recalc();
+  });
+
+  const dl = document.getElementById("products-dl");
+  body.addEventListener("input", e => {
+    if (!e.target.matches('[name$="-description"]')) return;
+    const row = e.target.closest(".item-row");
+    const opt = [...dl.options].find(o => o.value === e.target.value);
+    const pid = row.querySelector('[name$="-product"]');
+    if (opt) {
+      pid.value = opt.dataset.id;
+      row.querySelector('[name$="-unit_price"]').value = opt.dataset.price;
+      const qty = row.querySelector('[name$="-quantity"]');
+      if (!num(qty.value)) qty.value = 1;
+    } else {
+      pid.value = "";
+    }
     recalc();
   });
 

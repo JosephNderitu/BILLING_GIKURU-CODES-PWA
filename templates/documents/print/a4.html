@@ -65,6 +65,7 @@ td, th { vertical-align: top; }
           <div class="meta">
             <b>{{ doc.number }}</b><br>
             Issued: {{ doc.issue_date|date:"d M Y" }}<br>
+            {% if doc.etims_invoice_no %}eTIMS no: <b>{{ doc.etims_invoice_no }}</b><br>{% endif %}
             {% if doc.due_date %}{% if doc.doc_type == 'quotation' %}Valid until{% else %}Due{% endif %}: {{ doc.due_date|date:"d M Y" }}<br>{% endif %}
             <span class="pill">{{ doc.get_status_display|upper }}</span>
           </div>
@@ -76,9 +77,10 @@ td, th { vertical-align: top; }
     <div style="margin-top:7mm">
       <div class="label">Billed to</div>
       <b style="font-size:11pt">{{ doc.display_client }}</b>
-      {% if doc.client %}
-      <div class="biz">{{ doc.client.address|linebreaksbr }}<br>{{ doc.client.phone }}{% if doc.client.email %} &middot; {{ doc.client.email }}{% endif %}{% if doc.client.kra_pin %}<br>KRA PIN: {{ doc.client.kra_pin }}{% endif %}</div>
-      {% endif %}
+      <div class="biz">
+        {% if doc.client %}{{ doc.client.address|linebreaksbr }}<br>{{ doc.client.phone }}{% if doc.client.email %} &middot; {{ doc.client.email }}{% endif %}{% endif %}
+        {% if doc.buyer_pin_display %}<br>Buyer PIN: {{ doc.buyer_pin_display }}{% endif %}
+      </div>
     </div>
 
     <table class="items">
@@ -108,6 +110,13 @@ td, th { vertical-align: top; }
       {% if doc.vat_mode != 'none' %}<tr><td>VAT ({{ doc.vat_rate|floatformat:"-2" }}%)</td><td class="r">{{ doc.vat_amount|floatformat:"2g" }}</td></tr>{% endif %}
       <tr class="grand"><td>Total (KSh)</td><td class="r">{{ doc.total|floatformat:"2g" }}</td></tr>
     </table>
+
+    {% if etims_qr_img %}
+    <table style="margin-top:6mm;break-inside:avoid"><tr>
+      <td style="width:30mm"><img src="{{ etims_qr_img }}" style="width:27mm" alt=""></td>
+      <td class="biz" style="vertical-align:middle"><b>KRA eTIMS</b><br>Invoice no: {{ doc.etims_invoice_no }}<br>Scan to verify with KRA</td>
+    </tr></table>
+    {% endif %}
 
     <table class="cols"><tr>
       <td>

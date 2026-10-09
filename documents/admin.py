@@ -1,6 +1,6 @@
 import csv
 from decimal import Decimal
-
+from . import stock
 from django.contrib import admin, messages
 from django.db.models import Count, Max
 from django.http import HttpResponse
@@ -10,7 +10,7 @@ from django.utils import timezone
 from django.utils.html import format_html, format_html_join
 
 from .models import (BusinessProfile, Client, DeliveryItem, DeliveryNote,
-                     Document, DocumentItem)
+                     Document, DocumentItem, Product, ProductSerial, StockMovement)
 
 admin.site.site_header = "Gikuru Billing"
 admin.site.site_title = "Gikuru Billing"
@@ -158,7 +158,8 @@ class PaymentFilter(admin.SimpleListFilter):
 class ItemInline(admin.TabularInline):
     model = DocumentItem
     extra = 1
-    fields = ("description", "serial_numbers", "quantity", "unit_price", "line_total_col")
+    fields = ("Product", "description", "serial_numbers", "quantity", "unit_price", "line_total_col")
+    autocomplete_fields = ("product",)
     readonly_fields = ("line_total_col",)
 
     def formfield_for_dbfield(self, db_field, request, **kwargs):
@@ -202,6 +203,7 @@ class DocumentAdmin(admin.ModelAdmin):
         ("Client", {"fields": ("client", "client_name")}),
         ("Payment and service", {"fields": (("payment_method", "payment_reference"),
                                             ("served_by", "discount"))}),
+        ("eTIMS (KRA)", {"fields": ("buyer_pin", "etims_invoice_no", "etims_qr"), "classes": ("collapse",)}),
         ("Notes and terms", {"fields": ("notes", "terms"), "classes": ("collapse",)}),
         ("Summary", {"fields": ("totals_summary", "source_link", "issuer_details", "created_at")}),
     )
@@ -343,6 +345,15 @@ class DocumentAdmin(admin.ModelAdmin):
         n = queryset.exclude(status="void").update(status="void")
         self.message_user(request, f"{n} document(s) voided.", messages.WARNING)
 
+    def save_related(self, request, form, formsets, change):
+        super().save_related(request, form, formsets, change)
+        for w in stock.sync_document(form.instance):
+            messages.warning(request, w)
+
+    def _resync(self, queryset):
+        for d in queryset:
+            stock.sync_document(d)
+            
     @admin.action(description="Export selected to CSV")
     def export_csv(self, request, queryset):
         response = HttpResponse(content_type="text/csv; charset=utf-8")
@@ -462,3 +473,45 @@ class DeliveryNoteAdmin(admin.ModelAdmin):
                 'border:1px solid #E2E8F0;border-radius:8px"></a>', url)
         return format_html('<a href="{}" target="_blank" class="btn btn-sm btn-outline-success">'
                            'Open signed PDF</a>', url)
+        
+        
+class SerialInline(admin.TabularInline):
+    model = ProductSerial
+    extra = 0
+    fields = ("serial", "status", "document")
+    readonly_fields = ("document",)
+
+
+class MovementInline(admin.TabularInline):
+    model = StockMovement
+    extra = 0
+    can_delete = False
+    fields = ("created_at", "qty", "reason", "document", "note")
+    readonly_fields = fields
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(Product)
+class ProductAdmin(admin.ModelAdmin):
+    list_display = ("name", "sku", "category", "unit_price", "stock_col", "tracking_col", "active")
+    list_filter = ("category", "active", "track_stock", "track_serials")
+    search_fields = ("name", "sku")
+    list_editable = ("active",)
+    inlines = [SerialInline, MovementInline]
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).with_stock()
+
+    @admin.display(description="On hand", ordering="on_hand")
+    def stock_col(self, obj):
+        if not obj.track_stock:
+            return "-"
+        low = obj.on_hand <= obj.reorder_level
+        return format_html('<b style="color:{}">{}</b>', "#B91C1C" if low else "#15803D", f"{obj.on_hand:,.0f}")
+
+    @admin.display(description="Tracking")
+    def tracking_col(self, obj):
+        return "Stock + serials" if obj.track_serials else ("Stock" if obj.track_stock else "-")
+    

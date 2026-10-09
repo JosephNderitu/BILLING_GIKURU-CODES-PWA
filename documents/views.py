@@ -24,7 +24,9 @@ from .models import BusinessProfile, Document, DocumentItem
 from django.http import FileResponse
 from .forms import DeliveryForm, DeliveryItemFormSet, SignedCopyForm
 from .meta import CHECKLISTS, guess_category
-from .models import DeliveryItem, DeliveryNote
+from .models import *
+from . import stock
+from .share import share_url, whatsapp_url
 from .pdf import build_delivery_context, build_delivery_pdf
 
 
@@ -107,7 +109,9 @@ def document_detail(request, pk):
         "doc": doc, "meta": TYPE_META[doc.doc_type],
         "status_choices": STATUS_CHOICES[doc.doc_type],
         "converted": list(doc.converted.all()),
-        "delivery": doc.deliveries.first()
+        "delivery": doc.deliveries.first(),
+        "share_link": share_url(request, doc),
+        "whatsapp_url": whatsapp_url(request, doc),
         })
 
 
@@ -138,9 +142,12 @@ def document_convert(request, pk, target):
         src.status = "paid"
     new.save()
     DocumentItem.objects.bulk_create([
-        DocumentItem(document=new, description=i.description, serial_numbers=i.serial_numbers,
-                     quantity=i.quantity, unit_price=i.unit_price) for i in src.items.all()])
+        DocumentItem(document=new, product=i.product, description=i.description,
+                     serial_numbers=i.serial_numbers, quantity=i.quantity, unit_price=i.unit_price)
+        for i in src.items.all()])
     src.save(update_fields=["status"])
+    stock.sync_document(new)
+    stock.sync_document(src)
 
     messages.success(request, f"{src.number} converted to {new.number}.")
     # Receipts open in edit so the payment method and reference can be confirmed
@@ -155,6 +162,8 @@ def document_status(request, pk):
     if new in dict(STATUS_CHOICES[doc.doc_type]):
         doc.status = new
         doc.save(update_fields=["status"])
+        for w in stock.sync_document(doc):
+            messages.warning(request, w)
         messages.success(request, f"{doc.number} marked {doc.get_status_display().lower()}.")
     return redirect("documents:detail", pk=doc.pk)
 
@@ -176,6 +185,8 @@ def _editor(request, doc, doc_type):
             saved = form.save()
             formset.instance = saved
             formset.save()
+            for w in stock.sync_document(saved):
+                messages.warning(request, w)
             messages.success(request, f"{saved.number} saved.")
             return redirect("documents:detail", pk=saved.pk)
     else:
@@ -190,7 +201,8 @@ def _editor(request, doc, doc_type):
         formset = ItemFormSet(instance=doc)
     return render(request, "documents/document_form.html", {
         "form": form, "formset": formset, "doc": doc, "meta": TYPE_META[doc_type],
-        "doc_type": doc_type, "vat_rate": doc.vat_rate})
+        "doc_type": doc_type, "vat_rate": doc.vat_rate,
+        "products": Product.objects.filter(active=True).with_stock()})
 
 
 @login_required
@@ -246,8 +258,8 @@ def delivery_create(request, doc_pk):
         delivered_by=request.user.get_full_name() or request.user.username,
         delivery_location=(doc.client.address.replace("\n", ", ") if doc.client else ""))
     items = []
-    for i in doc.items.all():
-        cat = guess_category(i.description)
+    for i in doc.items.select_related("product"):
+        cat = i.product.category if i.product_id else guess_category(i.description)
         items.append(DeliveryItem(note=note, description=i.description, category=cat,
                                   quantity=i.quantity, serial_numbers=i.serial_numbers,
                                   checks=CHECKLISTS[cat]))
@@ -335,3 +347,31 @@ def delivery_list(request):
     return render(request, "documents/delivery_list.html", {
         "notes": page_obj, "page_obj": page_obj, "page_range": page_range,
         "querystring": querystring, "f": {"q": q, "status": status}})
+    
+def public_document(request, token):
+    doc = get_object_or_404(Document, share_token=token)
+    if not doc.share_viewed_at and not request.user.is_authenticated:
+        Document.objects.filter(pk=doc.pk).update(share_viewed_at=timezone.now())
+    return render(request, "documents/public_document.html", {"doc": doc, "p": doc.biz, "token": token})
+
+
+def public_preview(request, token):
+    doc = get_object_or_404(Document, share_token=token)
+    return render(request, template_for(doc), build_context(doc, False))
+
+
+def public_pdf(request, token):
+    doc = get_object_or_404(Document, share_token=token)
+    resp = HttpResponse(build_pdf(doc, request), content_type="application/pdf")
+    disp = "attachment" if request.GET.get("download") else "inline"
+    resp["Content-Disposition"] = f'{disp}; filename="{doc.number}.pdf"'
+    return resp
+
+
+@login_required
+@require_POST
+def document_share_reset(request, pk):
+    doc = get_object_or_404(Document, pk=pk)
+    doc.ensure_share_token(regenerate=True)
+    messages.success(request, "Share link regenerated. The old link no longer works.")
+    return redirect("documents:detail", pk=doc.pk)

@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views
+from . import views, catalog_views, report_views   # replace the existing import line
 
 app_name = "documents"
 urlpatterns = [
@@ -22,4 +22,22 @@ urlpatterns = [
     path("delivery/<int:pk>/pdf/", views.delivery_pdf, name="delivery_pdf"),
     path("delivery/<int:pk>/upload/", views.delivery_upload, name="delivery_upload"),
     path("delivery/<int:pk>/signed/", views.delivery_signed_file, name="delivery_signed"),
+    
+    # share
+    path("doc/<int:pk>/share/reset/", views.document_share_reset, name="share_reset"),
+    path("s/<str:token>/", views.public_document, name="public"),
+    path("s/<str:token>/preview/", views.public_preview, name="public_preview"),
+    path("s/<str:token>/pdf/", views.public_pdf, name="public_pdf"),
+    # products
+    path("products/", catalog_views.product_list, name="product_list"),
+    path("products/new/", catalog_views.product_edit, name="product_new"),
+    path("products/<int:pk>/", catalog_views.product_detail, name="product_detail"),
+    path("products/<int:pk>/edit/", catalog_views.product_edit, name="product_edit"),
+    path("products/<int:pk>/receive/", catalog_views.product_receive, name="product_receive"),
+    # reports
+    path("reports/", report_views.sales, name="reports"),
+    path("reports/sales/", report_views.sales, name="report_sales"),
+    path("reports/vat/", report_views.vat, name="report_vat"),
+    path("reports/aging/", report_views.aging, name="report_aging"),
+    path("reports/statements/", report_views.statements, name="report_statements"),
 ]

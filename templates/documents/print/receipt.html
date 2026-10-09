@@ -6,7 +6,7 @@
 <style>
 {% if page_size %}@page { size: {{ page_size }}; margin: 0; }{% else %}@page { margin: 0; }{% endif %}
 @media print { .no-print { display: none !important; } }
-* { box-sizing: border-box; }
+- { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; background: #fff; }
 body {
   width: {{ print_mm }}mm; margin: 0 auto; padding: 3mm 0 10mm;
@@ -52,6 +52,7 @@ body {
   <div class="row"><span>Receipt No:</span><span>{{ doc.number }}</span></div>
   <div class="row"><span>Date:</span><span>{{ doc.created_at|date:"d/m/Y H:i" }}</span></div>
   <div class="row"><span>Customer:</span><span>{{ doc.display_client }}</span></div>
+  {% if doc.buyer_pin_display %}<div class="row"><span>Buyer PIN:</span><span>{{ doc.buyer_pin_display }}</span></div>{% endif %}
   {% if doc.served_by %}<div class="row"><span>Served by:</span><span>{{ doc.served_by }}</span></div>{% endif %}
 </div>
 <div class="dash"></div>
@@ -82,8 +83,8 @@ body {
 
 <div class="dash"></div>
 <div class="c sm">
-  <img class="qr" src="{{ qr }}" alt="">
-  <div style="margin-top:1mm">Scan to verify this receipt</div>
+  <img class="qr" src="{% if etims_qr_img %}{{ etims_qr_img }}{% else %}{{ qr }}{% endif %}" alt="">
+  <div style="margin-top:1mm">{% if etims_qr_img %}KRA eTIMS: {{ doc.etims_invoice_no }}{% else %}Scan to verify this receipt{% endif %}</div>
   <div>{{ doc.number }}</div>
 </div>
 

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>{{ doc.get_doc_type_display }} {{ doc.number }} | {{ p.name }}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-900" style="font-family:Inter,system-ui,sans-serif">
+  <div class="h-1.5" style="background:linear-gradient(90deg,#16A34A 55%,#F5B301 55% 80%,#1B2FA8 80%)"></div>
+  <header class="bg-white border-b border-slate-200">
+    <div class="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
+      <div class="min-w-0"><p class="font-bold truncate">{{ p.name }}</p><p class="text-xs text-slate-500 truncate">{{ p.tagline }}</p></div>
+      <a href="{% url 'documents:public_pdf' token %}?download=1" class="shrink-0 px-4 py-2.5 rounded-lg bg-[#15803D] text-white text-sm font-semibold">
+        <i class="fa-solid fa-download mr-1"></i> Download PDF</a>
+    </div>
+  </header>
+  <main class="max-w-3xl mx-auto px-4 py-6">
+    {% if doc.status == 'void' %}<div class="mb-4 rounded-lg border border-red-300 bg-red-50 text-red-700 text-sm px-4 py-3">This document has been voided.</div>{% endif %}
+    <div class="rounded-xl bg-white border border-slate-200 p-4 mb-5 flex flex-wrap items-center justify-between gap-3">
+      <div><p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">{{ doc.get_doc_type_display }}</p>
+        <p class="text-lg font-bold">{{ doc.number }}</p></div>
+      <div class="text-right"><p class="text-xs text-slate-500">Total</p><p class="text-lg font-bold">KSh {{ doc.total|floatformat:"2g" }}</p></div>
+    </div>
+    <div class="w-full">
+      <div class="fit-wrap" data-w="{% if doc.doc_type == 'receipt' %}340{% else %}794{% endif %}" data-h="{% if doc.doc_type == 'receipt' %}1100{% else %}1123{% endif %}">
+        <iframe src="{% url 'documents:public_preview' token %}" class="bg-white rounded-xl border border-slate-200"
+          style="width:{% if doc.doc_type == 'receipt' %}340{% else %}794{% endif %}px;height:{% if doc.doc_type == 'receipt' %}1100{% else %}1123{% endif %}px"></iframe>
+      </div>
+    </div>
+  </main>
+<script>
+function fit(){document.querySelectorAll(".fit-wrap").forEach(w=>{const bw=+w.dataset.w,bh=+w.dataset.h;
+  const k=Math.min(1,w.parentElement.clientWidth/bw),f=w.firstElementChild;
+  f.style.transformOrigin="top left";f.style.transform=`scale(${k})`;w.style.width=(bw*k)+"px";w.style.height=(bh*k)+"px";});}
+addEventListener("resize",fit);addEventListener("load",fit);fit();
+</script>
+</body>
+</html>
