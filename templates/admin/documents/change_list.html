@@ -1,0 +1,28 @@
+{% extends "admin/change_list.html" %}
+{% block content %}
+{% if kpis %}
+<div class="row">
+  <div class="col-6 col-lg-3">
+    <div class="info-box"><span class="info-box-icon bg-success"><i class="fas fa-file-invoice"></i></span>
+      <div class="info-box-content"><span class="info-box-text">Documents</span>
+        <span class="info-box-number">{{ kpis.count }}</span></div></div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="info-box"><span class="info-box-icon bg-primary"><i class="fas fa-coins"></i></span>
+      <div class="info-box-content"><span class="info-box-text">Total value</span>
+        <span class="info-box-number">KSh {{ kpis.total }}</span></div></div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="info-box"><span class="info-box-icon bg-warning"><i class="fas fa-hourglass-half"></i></span>
+      <div class="info-box-content"><span class="info-box-text">Outstanding invoices</span>
+        <span class="info-box-number">KSh {{ kpis.outstanding }}</span></div></div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="info-box"><span class="info-box-icon bg-danger"><i class="fas fa-exclamation-circle"></i></span>
+      <div class="info-box-content"><span class="info-box-text">Overdue</span>
+        <span class="info-box-number">{{ kpis.overdue }}</span></div></div>
+  </div>
+</div>
+{% endif %}
+{{ block.super }}
+{% endblock %}

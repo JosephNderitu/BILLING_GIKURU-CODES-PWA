@@ -1,0 +1,36 @@
+:root { --g:#15803D; --gold:#F5B301; --blue:#1B2FA8; --ink:#0F172A; --muted:#64748B; }
+body { font-family: "Inter", system-ui, sans-serif; }
+
+/* Sidebar and brand */
+.main-sidebar { background: var(--ink) !important; }
+.main-sidebar .brand-link { background: #0B1220 !important; border-bottom: 1px solid rgba(255,255,255,.08) !important; }
+.sidebar-dark-success .nav-sidebar > .nav-item > .nav-link.active,
+.sidebar-dark-success .nav-sidebar .nav-treeview > .nav-item > .nav-link.active {
+  background: var(--g) !important; color: #fff !important; box-shadow: none;
+}
+.main-header.navbar { box-shadow: 0 1px 0 #E2E8F0; border-bottom: 3px solid transparent;
+  border-image: linear-gradient(90deg, var(--g) 55%, var(--gold) 55% 80%, var(--blue) 80%) 1; }
+
+/* Buttons and links */
+.btn-primary, .btn-success { background: var(--g); border-color: var(--g); }
+.btn-primary:hover, .btn-success:hover { background: #166534; border-color: #166534; }
+.btn-outline-success { color: var(--g); border-color: var(--g); }
+.btn-outline-success:hover { background: var(--g); color: #fff; }
+.content-wrapper a:not(.btn):not(.nav-link):not(.page-link) { color: var(--blue); }
+
+/* Cards and forms */
+.card { border-radius: 12px; border: 1px solid #E2E8F0; box-shadow: 0 1px 2px rgba(15,23,42,.05); }
+.info-box { border-radius: 12px; border: 1px solid #E2E8F0; box-shadow: 0 1px 2px rgba(15,23,42,.05); }
+.form-control:focus, .select2-container--focus .select2-selection {
+  border-color: var(--g) !important; box-shadow: 0 0 0 .2rem rgba(21,128,61,.15) !important;
+}
+
+/* Changelist tables */
+#result_list thead th { background: #F8FAFC; color: var(--muted); font-size: .72rem;
+  text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid #E2E8F0; }
+#result_list tbody tr:hover { background: #F8FAFC; }
+#result_list td { vertical-align: middle; }
+.page-item.active .page-link { background: var(--g); border-color: var(--g); }
+
+/* Fieldset titles */
+fieldset.module h2, .card-header .card-title { font-weight: 700; color: var(--ink); }

@@ -129,3 +129,94 @@ SITE_URL = "localhost:8000, 127.0.0.1:8000"  # used for QR code payloads, can be
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+JAZZMIN_SETTINGS = {
+    "site_title": "Gikuru Billing",
+    "site_header": "Gikuru Billing",
+    "site_brand": "Gikuru Billing",
+    "site_logo": "documents/img/mark.png",
+    "login_logo": "documents/img/logo.png",
+    "site_icon": "documents/img/mark.png",
+    "site_logo_classes": "",
+    "welcome_sign": "Welcome to Gikuru Billing",
+    "copyright": "Gikuru Codes Tech Solutions",
+    "search_model": ["documents.document", "documents.client"],
+    "user_avatar": None,
+
+    "topmenu_links": [
+        {"name": "Billing app", "url": "/", "icon": "fas fa-arrow-left"},
+        {"name": "New invoice", "url": "/new/invoice/", "icon": "fas fa-plus"},
+        {"model": "documents.document"},
+    ],
+    "usermenu_links": [{"name": "Billing app", "url": "/", "icon": "fas fa-home"}],
+
+    "show_sidebar": True,
+    "navigation_expanded": True,
+    "order_with_respect_to": [
+        "documents.document", "documents.deliverynote", "documents.client",
+        "documents.businessprofile", "auth",
+    ],
+    "custom_links": {
+        "documents": [
+            {"name": "Invoices", "url": "/admin/documents/document/?doc_type__exact=invoice",
+             "icon": "fas fa-file-invoice-dollar", "permissions": ["documents.view_document"]},
+            {"name": "Quotations", "url": "/admin/documents/document/?doc_type__exact=quotation",
+             "icon": "fas fa-file-alt", "permissions": ["documents.view_document"]},
+            {"name": "Receipts", "url": "/admin/documents/document/?doc_type__exact=receipt",
+             "icon": "fas fa-receipt", "permissions": ["documents.view_document"]},
+            {"name": "Overdue invoices", "url": "/admin/documents/document/?payment=overdue",
+             "icon": "fas fa-exclamation-circle", "permissions": ["documents.view_document"]},
+            {"name": "Awaiting signature", "url": "/admin/documents/deliverynote/?signature=pending",
+             "icon": "fas fa-file-signature", "permissions": ["documents.view_deliverynote"]},
+        ],
+    },
+    "icons": {
+        "auth": "fas fa-users-cog",
+        "auth.user": "fas fa-user",
+        "auth.group": "fas fa-users",
+        "documents.document": "fas fa-file-invoice-dollar",
+        "documents.deliverynote": "fas fa-truck",
+        "documents.client": "fas fa-address-book",
+        "documents.businessprofile": "fas fa-building",
+    },
+    "default_icon_parents": "fas fa-folder",
+    "default_icon_children": "fas fa-circle",
+    "related_modal_active": True,
+    "custom_css": "documents/admin/brand.css",
+    "use_google_fonts_cdn": True,
+    "show_ui_builder": False,
+    "changeform_format": "single",
+    "changeform_format_overrides": {
+        "documents.businessprofile": "horizontal_tabs",
+        "auth.user": "collapsible",
+    },
+}
+
+JAZZMIN_UI_TWEAKS = {
+    "navbar_small_text": False, "footer_small_text": False,
+    "body_small_text": False, "brand_small_text": False,
+    "brand_colour": "navbar-dark",
+    "accent": "accent-success",
+    "navbar": "navbar-white navbar-light",
+    "no_navbar_border": True,
+    "navbar_fixed": True,
+    "layout_boxed": False,
+    "footer_fixed": False,
+    "sidebar_fixed": True,
+    "sidebar": "sidebar-dark-success",
+    "sidebar_nav_small_text": False,
+    "sidebar_disable_expand": False,
+    "sidebar_nav_child_indent": True,
+    "sidebar_nav_compact_style": True,
+    "sidebar_nav_legacy_style": False,
+    "sidebar_nav_flat_style": False,
+    "theme": "default",
+    "dark_mode_theme": None,
+    "button_classes": {
+        "primary": "btn-primary", "secondary": "btn-outline-secondary",
+        "info": "btn-outline-info", "warning": "btn-warning",
+        "danger": "btn-danger", "success": "btn-success",
+    },
+    "actions_sticky_top": True,
+}
