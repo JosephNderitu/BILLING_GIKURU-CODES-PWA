@@ -123,7 +123,7 @@ MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 LOGIN_URL = "admin:login"
-SITE_URL = "localhost:8000, 127.0.0.1:8000"  # used for QR code payloads, can be overridden in production
+SITE_URL = ""  # used for QR code payloads, can be overridden in production
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
